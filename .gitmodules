@@ -1,0 +1,3 @@
+[submodule "ext/dramsim3/DRAMsim3"]
+	path = ext/dramsim3/DRAMsim3
+	url = https://github.com/Ivyfeather/DRAMsim3.git
