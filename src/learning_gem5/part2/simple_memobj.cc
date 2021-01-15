@@ -168,7 +168,8 @@ SimpleMemobj::handleRequest(PacketPtr pkt)
         return false;
     }
 
-    DPRINTF(SimpleMemobj, "Got request for addr %#x\n", pkt->getAddr());
+    DPRINTF(SimpleMemobj, "Got request for addr %#x from %s\n", pkt->getAddr(),\
+     system()->getRequestorName(pkt->req->requestorId()));
 
     // This memobj is now blocked waiting for the response to this packet.
     blocked = true;
@@ -183,7 +184,8 @@ bool
 SimpleMemobj::handleResponse(PacketPtr pkt)
 {
     assert(blocked);
-    DPRINTF(SimpleMemobj, "Got response for addr %#x\n", pkt->getAddr());
+    DPRINTF(SimpleMemobj, "Got response for addr %#x from %s\n", pkt->getAddr(),\
+     system()->getRequestorName(pkt->req->requestorId()));
 
     // The packet is now done. We're about to put it in the port, no need for
     // this object to continue to stall.

@@ -36,7 +36,8 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-import m5.objects
+import m5
+from m5.objects import *
 from common import ObjectList
 from common import HMC
 
@@ -261,16 +262,26 @@ def config_mem(options, system):
     for i in range(len(nvm_intfs)):
         mem_ctrls[i].nvm = nvm_intfs[i];
 
+    subsystem.mem_ctrls = mem_ctrls
+
     # Connect the controller to the xbar port
-    for i in range(len(mem_ctrls)):
+    for i in range(len(subsystem.mem_ctrls)):
         if opt_mem_type == "HMC_2500_1x32":
             # Connect the controllers to the membus
-            mem_ctrls[i].port = xbar[i/4].master
+            subsystem.mem_ctrls[i].port = xbar[i/4].master
             # Set memory device size. There is an independent controller
             # for each vault. All vaults are same size.
-            mem_ctrls[i].dram.device_size = options.hmc_dev_vault_size
+            subsystem.mem_ctrls[i].dram.device_size = options.hmc_dev_vault_size
         else:
             # Connect the controllers to the membus
-            mem_ctrls[i].port = xbar.master
+            subsystem.use_memobj = True
+            if not subsystem.use_memobj:
+                subsystem.mem_ctrls[i].port = xbar.master
+            else:
+                print("***ADD SimpleMemobj*** MemConfig.py:277 {}".format(i))
+                subsystem.memobj = SimpleMemobj()
+                subsystem.mem_ctrls[i].port = subsystem.memobj.mem_side
 
-    subsystem.mem_ctrls = mem_ctrls
+                xbar.master = subsystem.memobj.cpu_side
+
+

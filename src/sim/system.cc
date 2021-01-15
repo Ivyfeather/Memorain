@@ -51,15 +51,18 @@
 #include "base/str.hh"
 #include "base/trace.hh"
 #include "config/use_kvm.hh"
+
 #if USE_KVM
 #include "cpu/kvm/base.hh"
 #include "cpu/kvm/vm.hh"
+
 #endif
 #include "cpu/base.hh"
 #include "cpu/thread_context.hh"
 #include "debug/Loader.hh"
 #include "debug/Quiesce.hh"
 #include "debug/WorkItems.hh"
+#include "learning_gem5/part2/simple_memobj.hh"
 #include "mem/abstract_mem.hh"
 #include "mem/physical.hh"
 #include "params/System.hh"
@@ -259,8 +262,11 @@ System::System(Params *p)
     numSystemsRunning++;
 
     // Set back pointers to the system in all memories
-    for (int x = 0; x < params()->memories.size(); x++)
-        params()->memories[x]->system(this);
+    for (int x = 0; x < params().memories.size(); x++)
+        params().memories[x]->system(this);
+
+    if (params().use_memobj)
+        params().memobj->system(this);
 }
 
 System::~System()
