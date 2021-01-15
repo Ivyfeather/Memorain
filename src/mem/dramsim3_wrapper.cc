@@ -59,7 +59,7 @@ DRAMsim3Wrapper::DRAMsim3Wrapper(const std::string& config_file,
                                  const std::string& working_dir,
                                  std::function<void(uint64_t)> read_cb,
                                  std::function<void(uint64_t)> write_cb) :
-    dramsim(dramsim3::GetMemorySystem(config_file, working_dir,
+    dramsim(new dramsim3::MemorySystem(config_file, working_dir,
                                        read_cb, write_cb)),
     _clockPeriod(0.0), _queueSize(0), _burstSize(0)
 {
