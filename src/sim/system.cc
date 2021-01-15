@@ -70,6 +70,7 @@
 #include "sim/debug.hh"
 #include "sim/full_system.hh"
 #include "sim/redirect_path.hh"
+#include "learning_gem5/part2/simple_memobj.hh"
 
 using namespace std;
 using namespace TheISA;
@@ -263,6 +264,9 @@ System::System(const Params &p)
     // Set back pointers to the system in all memories
     for (int x = 0; x < params().memories.size(); x++)
         params().memories[x]->system(this);
+
+    if(params().use_memobj)
+        params().memobj->system(this);
 }
 
 System::~System()

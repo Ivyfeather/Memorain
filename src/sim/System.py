@@ -63,6 +63,8 @@ class System(SimObject):
         PyBindMethod("setMemoryMode"),
     ]
 
+    use_memobj = Param.Bool(False, "do not insert memobj")
+    memobj = Param.SimpleMemobj(NULL, "Memobj between membus and memctrls")
     memories = VectorParam.AbstractMemory(Self.all,
                                           "All memories in the system")
     mem_mode = Param.MemoryMode('atomic', "The mode the memory system is in")
