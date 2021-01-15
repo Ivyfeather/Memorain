@@ -29,12 +29,13 @@
 #include "learning_gem5/part2/simple_memobj.hh"
 
 #include "base/trace.hh"
+#include "mem/packet_access.hh"
+#include "sim/system.hh"
 #include "debug/SimpleMemobj.hh"
 
 SimpleMemobj::SimpleMemobj(const SimpleMemobjParams &params) :
     SimObject(params),
-    instPort(params.name + ".inst_port", this),
-    dataPort(params.name + ".data_port", this),
+    cpuPort(params.name + ".cpu_side", this),
     memPort(params.name + ".mem_side", this),
     blocked(false)
 {
@@ -48,10 +49,8 @@ SimpleMemobj::getPort(const std::string &if_name, PortID idx)
     // This is the name from the Python SimObject declaration (SimpleMemobj.py)
     if (if_name == "mem_side") {
         return memPort;
-    } else if (if_name == "inst_port") {
-        return instPort;
-    } else if (if_name == "data_port") {
-        return dataPort;
+    } else if (if_name == "cpu_side"){
+        return cpuPort;
     } else {
         // pass it along to our super class
         return SimObject::getPort(if_name, idx);
@@ -193,16 +192,16 @@ SimpleMemobj::handleResponse(PacketPtr pkt)
     blocked = false;
 
     // Simply forward to the memory port
-    if (pkt->req->isInstFetch()) {
-        instPort.sendPacket(pkt);
-    } else {
-        dataPort.sendPacket(pkt);
-    }
+    // if (pkt->req->isInstFetch()) {
+    //     instPort.sendPacket(pkt);
+    // } else {
+    //     dataPort.sendPacket(pkt);
+    // }
+    cpuPort.sendPacket(pkt);
 
     // For each of the cpu ports, if it needs to send a retry, it should do it
     // now since this memory object may be unblocked now.
-    instPort.trySendRetry();
-    dataPort.trySendRetry();
+    cpuPort.trySendRetry();
 
     return true;
 }
@@ -225,6 +224,5 @@ SimpleMemobj::getAddrRanges() const
 void
 SimpleMemobj::sendRangeChange()
 {
-    instPort.sendRangeChange();
-    dataPort.sendRangeChange();
+    cpuPort.sendRangeChange();
 }

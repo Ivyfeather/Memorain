@@ -32,6 +32,7 @@
 #include "mem/port.hh"
 #include "params/SimpleMemobj.hh"
 #include "sim/sim_object.hh"
+#include "sim/system.hh"
 
 /**
  * A very simple memory object. Current implementation doesn't even cache
@@ -218,14 +219,17 @@ class SimpleMemobj : public SimObject
     void sendRangeChange();
 
     /// Instantiation of the CPU-side ports
-    CPUSidePort instPort;
-    CPUSidePort dataPort;
+    // CPUSidePort instPort;
+    // CPUSidePort dataPort;
+    CPUSidePort cpuPort;
 
     /// Instantiation of the memory-side port
     MemSidePort memPort;
 
     /// True if this is currently blocked waiting for a response.
     bool blocked;
+
+    System *_system;
 
   public:
 
@@ -245,6 +249,19 @@ class SimpleMemobj : public SimObject
      */
     Port &getPort(const std::string &if_name,
                   PortID idx=InvalidPortID) override;
+
+    /** read the system pointer
+     * Implemented for completeness with the setter
+     * @return pointer to the system object */
+    System* system() const { return _system; }
+
+    /** Set the system pointer on this memory
+     * This can't be done via a python parameter because the system needs
+     * pointers to all the memories and the reverse would create a cycle in the
+     * object graph. An init() this is set.
+     * @param sys system pointer to set
+     */
+    void system(System *sys) { _system = sys; }
 };
 
 
