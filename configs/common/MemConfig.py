@@ -274,11 +274,11 @@ def config_mem(options, system):
             subsystem.mem_ctrls[i].dram.device_size = options.hmc_dev_vault_size
         else:
             # Connect the controllers to the membus
-            subsystem.use_memobj = True
-            if not subsystem.use_memobj:
+            if not options.use_memobj:
                 subsystem.mem_ctrls[i].port = xbar.master
             else:
-                print("***ADD SimpleMemobj*** MemConfig.py:277 {}".format(i))
+                subsystem.use_memobj = True
+                print("***ADD SimpleMemobj*** MemConfig.py:281 {}".format(i))
                 subsystem.memobj = SimpleMemobj()
                 subsystem.mem_ctrls[i].port = subsystem.memobj.mem_side
                 
