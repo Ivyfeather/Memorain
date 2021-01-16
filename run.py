@@ -22,8 +22,8 @@ def add_options(parser):
     parser.add_argument("--debug-flag",type=str)
     parser.add_argument("--other",type=str)
     parser.add_argument("--l2cache",action='store_true')
-    parser.add_argument("-R",action='store_true',
-                        help="Redirect output to file")
+    parser.add_argument("-R",action='store_true',help="Redirect output to file")
+    parser.add_argument("-M","--memobj",action='store_true',help="use memobj")
 
 def get_workloads(wkld_str):
     wklds = []
@@ -58,6 +58,9 @@ if __name__ == "__main__":
 
     if args.l2cache:
         options.append('--l2cache')
+
+    if args.memobj:
+        options.append('--use_memobj')
 
 # Common Options
     if args.cpu_type:
