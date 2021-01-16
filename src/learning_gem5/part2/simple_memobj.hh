@@ -218,9 +218,7 @@ class SimpleMemobj : public SimObject
      */
     void sendRangeChange();
 
-    /// Instantiation of the CPU-side ports
-    // CPUSidePort instPort;
-    // CPUSidePort dataPort;
+    /// Instantiation of the CPU-side ports [Ivy]
     CPUSidePort cpuPort;
 
     /// Instantiation of the memory-side port
@@ -229,7 +227,15 @@ class SimpleMemobj : public SimObject
     /// True if this is currently blocked waiting for a response.
     bool blocked;
 
+    /// Used for printing system-related info [Ivy]
     System *_system;
+
+    /// add periodic monitoring and tuning event [Ivy]
+    void processEvent();
+
+    EventFunctionWrapper event;
+
+    Tick latency;
 
   public:
 
@@ -255,13 +261,15 @@ class SimpleMemobj : public SimObject
      * @return pointer to the system object */
     System* system() const { return _system; }
 
-    /** Set the system pointer on this memory
+    /** Set the system pointer on this memory object
      * This can't be done via a python parameter because the system needs
      * pointers to all the memories and the reverse would create a cycle in the
      * object graph. An init() this is set.
      * @param sys system pointer to set
      */
     void system(System *sys) { _system = sys; }
+
+    void startup();
 };
 
 

@@ -32,12 +32,15 @@
 #include "debug/SimpleMemobj.hh"
 #include "mem/packet_access.hh"
 #include "sim/system.hh"
+#include "AutoMBA/automba.h"
 
 SimpleMemobj::SimpleMemobj(SimpleMemobjParams *params) :
     SimObject(params),
     cpuPort(params.name + ".cpu_side", this),
     memPort(params.name + ".mem_side", this),
-    blocked(false)
+    blocked(false), _system(NULL),
+    event([this]{processEvent();}, name()),
+    latency(SAMPLING_INTERVAL)
 {
 }
 
@@ -229,10 +232,22 @@ SimpleMemobj::sendRangeChange()
     cpuPort.sendRangeChange();
 }
 
-
-
 SimpleMemobj*
 SimpleMemobjParams::create()
 {
     return new SimpleMemobj(this);
+}
+
+void
+SimpleMemobj::processEvent()
+{
+    DPRINTF(SimpleMemobj, "test: processEvent!\n");
+
+    schedule(event, curTick() + latency);
+}
+
+void
+SimpleMemobj::startup()
+{
+    schedule(event, latency);
 }

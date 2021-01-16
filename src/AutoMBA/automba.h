@@ -2,8 +2,8 @@
 #define __AUTOMBA_H_
 
 #define NUM_CPUS 8
-#define SAMPLING_INTERVAL 100_0000 //change to 10_0000 later
-#define UPDATING_INTERVAL 500_0000
+#define SAMPLING_INTERVAL 1000000 //change to 10_0000 later
+#define UPDATING_INTERVAL 5000000
 
 class Arbiter { //仲裁
 public:
