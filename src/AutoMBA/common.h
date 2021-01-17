@@ -20,6 +20,7 @@
 #include <random>
 #include <string>
 #include <iomanip>
+#include <vector>
 
 #define AUTOMBA_ENABLE
 
