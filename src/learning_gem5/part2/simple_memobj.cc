@@ -257,7 +257,11 @@ SimpleMemobj::processEvent()
 void
 SimpleMemobj::startup()
 {
-    schedule(event, latency);
+    DPRINTF(SimpleMemobj, "Starting\n");
     assert((UPDATING_INTERVAL % SAMPLING_INTERVAL == 0) && "ui must be a multiple of si");
     times_si = UPDATING_INTERVAL / SAMPLING_INTERVAL;
+    for(int i = 0; i < system()->maxRequestors(); i++){
+        DPRINTF(SimpleMemobj, "Requestor %d : Name %s\n", i, system()->getRequestorName(i));
+    }
+    schedule(event, latency);
 }
