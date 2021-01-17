@@ -60,17 +60,10 @@ SimpleMemobj::getPort(const std::string &if_name, PortID idx)
     }
 }
 
-void
+bool
 SimpleMemobj::CPUSidePort::sendPacket(PacketPtr pkt)
 {
-    // Note: This flow control is very simple since the memobj is blocking.
-
-    panic_if(blockedPacket != nullptr, "Should never try to send if blocked!");
-
-    // If we can't send the packet across the port, store it for later.
-    if (!sendTimingResp(pkt)) {
-        blockedPacket = pkt;
-    }
+    return sendTimingResp(pkt);
 }
 
 AddrRangeList
@@ -123,17 +116,10 @@ SimpleMemobj::CPUSidePort::recvRespRetry()
     sendPacket(pkt);
 }
 
-void
+bool
 SimpleMemobj::MemSidePort::sendPacket(PacketPtr pkt)
 {
-    // Note: This flow control is very simple since the memobj is blocking.
-
-    panic_if(blockedPacket != nullptr, "Should never try to send if blocked!");
-
-    // If we can't send the packet across the port, store it for later.
-    if (!sendTimingReq(pkt)) {
-        blockedPacket = pkt;
-    }
+    return sendTimingReq(pkt);
 }
 
 bool
@@ -166,52 +152,22 @@ SimpleMemobj::MemSidePort::recvRangeChange()
 bool
 SimpleMemobj::handleRequest(PacketPtr pkt)
 {
-    if (blocked) {
-        // There is currently an outstanding request. Stall.
-        return false;
-    }
     /*
     DPRINTF(SimpleMemobj, "Got request for addr %#x from %s\n", pkt->getAddr(),\
      system()->getRequestorName(pkt->req->requestorId()));
     */
 
-    // This memobj is now blocked waiting for the response to this packet.
-    blocked = true;
-
-    // Simply forward to the memory port
-    memPort.sendPacket(pkt);
-
-    return true;
+    return memPort.sendPacket(pkt);
 }
 
 bool
 SimpleMemobj::handleResponse(PacketPtr pkt)
 {
-    assert(blocked);
     /*
     DPRINTF(SimpleMemobj, "Got response for addr %#x from %s\n", pkt->getAddr(),\
      system()->getRequestorName(pkt->req->requestorId()));
     */
-
-    // The packet is now done. We're about to put it in the port, no need for
-    // this object to continue to stall.
-    // We need to free the resource before sending the packet in case the CPU
-    // tries to send another request immediately (e.g., in the same callchain).
-    blocked = false;
-
-    // Simply forward to the memory port
-    // if (pkt->req->isInstFetch()) {
-    //     instPort.sendPacket(pkt);
-    // } else {
-    //     dataPort.sendPacket(pkt);
-    // }
-    cpuPort.sendPacket(pkt);
-
-    // For each of the cpu ports, if it needs to send a retry, it should do it
-    // now since this memory object may be unblocked now.
-    cpuPort.trySendRetry();
-
-    return true;
+    return cpuPort.sendPacket(pkt);
 }
 
 void

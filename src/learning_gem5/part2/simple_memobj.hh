@@ -76,7 +76,7 @@ class SimpleMemobj : public SimObject
          *
          * @param packet to send.
          */
-        void sendPacket(PacketPtr pkt);
+        bool sendPacket(PacketPtr pkt);
 
         /**
          * Get a list of the non-overlapping address ranges the owner is
@@ -154,7 +154,7 @@ class SimpleMemobj : public SimObject
          *
          * @param packet to send.
          */
-        void sendPacket(PacketPtr pkt);
+        bool sendPacket(PacketPtr pkt);
 
       protected:
         /**
