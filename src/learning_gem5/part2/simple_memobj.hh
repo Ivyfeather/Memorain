@@ -237,6 +237,9 @@ class SimpleMemobj : public SimObject
 
     Tick latency;
 
+    /// times of sampling in an updating interval [Ivy]
+    int times_si;
+
   public:
 
     /** constructor

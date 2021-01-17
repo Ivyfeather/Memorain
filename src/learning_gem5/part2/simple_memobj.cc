@@ -40,7 +40,7 @@ SimpleMemobj::SimpleMemobj(const SimpleMemobjParams &params) :
     memPort(params.name + ".mem_side", this),
     blocked(false), _system(NULL),
     event([this]{processEvent();}, name()),
-    latency(SAMPLING_INTERVAL)
+    latency(SAMPLING_INTERVAL), times_si(0)
 {
 }
 
@@ -170,9 +170,10 @@ SimpleMemobj::handleRequest(PacketPtr pkt)
         // There is currently an outstanding request. Stall.
         return false;
     }
-
+    /*
     DPRINTF(SimpleMemobj, "Got request for addr %#x from %s\n", pkt->getAddr(),\
      system()->getRequestorName(pkt->req->requestorId()));
+    */
 
     // This memobj is now blocked waiting for the response to this packet.
     blocked = true;
@@ -187,8 +188,10 @@ bool
 SimpleMemobj::handleResponse(PacketPtr pkt)
 {
     assert(blocked);
+    /*
     DPRINTF(SimpleMemobj, "Got response for addr %#x from %s\n", pkt->getAddr(),\
      system()->getRequestorName(pkt->req->requestorId()));
+    */
 
     // The packet is now done. We're about to put it in the port, no need for
     // this object to continue to stall.
@@ -235,8 +238,13 @@ SimpleMemobj::sendRangeChange()
 void
 SimpleMemobj::processEvent()
 {
-    DPRINTF(SimpleMemobj, "test: processEvent!\n");
-
+    if(times_si <= 1){
+        DPRINTF(SimpleMemobj, "test: Updating!\n");      
+        times_si = UPDATING_INTERVAL / SAMPLING_INTERVAL;
+    }else{
+        DPRINTF(SimpleMemobj, "test: Sampling!\n");
+        times_si --;
+    }
     schedule(event, curTick() + latency);
 }
 
@@ -244,4 +252,6 @@ void
 SimpleMemobj::startup()
 {
     schedule(event, latency);
+    assert((UPDATING_INTERVAL % SAMPLING_INTERVAL == 0) && "ui must be a multiple of si");
+    times_si = UPDATING_INTERVAL / SAMPLING_INTERVAL;
 }
