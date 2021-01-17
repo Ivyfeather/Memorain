@@ -43,7 +43,7 @@ private:
 public:
     LatencyPred() {
         memset(history_table, 0, NUM_HISTORY_LENGTH*NUM_HISTORY_TABLES*sizeof(LatencyHistoryReg));
-        FILE *fp = fopen("latency_tree.txt", "r");
+        FILE *fp = fopen("/home/chenxi/Memorain/util/AutoMBA/latency_tree.txt", "r");
         assert(fp && "open latency_tree.txt failed!!");
         /// what is this [Ivy?]
         int outputs[] = {

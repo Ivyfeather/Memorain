@@ -80,7 +80,7 @@ private:
     Classifier *clf;
 public:
     SlowdownEstimator() {
-        FILE *fp = fopen("slowdown_tree.txt", "r");
+        FILE *fp = fopen("/home/chenxi/Memorain/util/AutoMBA/slowdown_tree.txt", "r");
         assert(fp && "open slowdown_tree.txt failed!!");
         int outputs[] = {
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
