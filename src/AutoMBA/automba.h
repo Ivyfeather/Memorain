@@ -16,17 +16,10 @@ public:
     int get_core(int tag[NUM_CPUS], int status[NUM_CPUS]);
 };
 
-class ReturnPacket {
-public:
-    long addr;
-    int coreid;
-    uint8_t instruction;
-    uint32_t champsim_type;
-    uint64_t time;
-};
 
 class AutoMBA{
 private:
+    ///[Ivy TODO] use these as #define
     const static bool PRINT_ACCUMULATORS = true;
     const static bool PRINT_TB_PARAMETERS = true;
 
@@ -35,25 +28,27 @@ private:
     const static bool SHOW_ACTUAL_SLOWDOWN = (NUM_CPUS > 1);
     const static bool SHOW_PREDICTED_SLOWDOWN = (NUM_CPUS > 1);
 
-    /// 
+    const static bool NUM_TAGS = 2;
+
+    /// the label passed from core
     int core_tags[NUM_CPUS] = {1};
     
-    ////
-    TokenBucket *buckets[NUM_CPUS];
+    //// a token bucket for each tag
+    TokenBucket *buckets[NUM_TAGS];
     
     /// pending req 
     /// - used to store reqs that have been sent to mem_ctrl 
     ///   but have not yet recevied response
     std::vector<LabeledReq *> pending_req[NUM_CPUS];
     
-    /// 
+    /// decide which tokenbucket to send from
     Arbiter arbiter;
 
-    ///
+    /// lantency predicting model
     LatencyPred lpm[NUM_CPUS];
     
-    ///
-    CycleRecorder *cr[NUM_CPUS] = {NULL};
+    /// 
+    // CycleRecorder *cr[NUM_CPUS] = {NULL};
 
     /// info counters
     static const int ACC_NUM = 64;
@@ -80,6 +75,7 @@ private:
         ACC_ALL_WRITE_T,
         ACC_ALL_MAX
     };
+    ///[Ivy TODO] use these as #define
     uint64_t sampling_interval = SAMPLING_INTERVAL, updating_interval = UPDATING_INTERVAL;
     uint64_t sampling_cycle = 0, updating_cycle = 0;
 
@@ -99,24 +95,7 @@ private:
     Policy policy = Policy::MAX;
 #endif
 
-    /// 
-    std::queue<ReturnPacket *> return_q;
-
-    void operate_token_buckets();
-    void operate_slowdown_pred();
-
-
-    void request_sent(LabeledReq *lreq);
-    
-    bool request_match(PacketPtr a, PacketPtr b) {
-        //////[TODO]
-        return true;
-    }
-    
-    //     return a->coreid == b->coreid && a->addr == b->addr && a->type == b->type;
-    // }
-    // void return_data_ramulator_shadow(PacketPtr& req);
-    
+public:  
     /// print counter info
     void print_si_accumulators();
     void print_ui_accumulators();
@@ -124,24 +103,24 @@ private:
     void reset_ui_accumulators();
     void print_tb_parameters();
 
-public:
+    
+    /// set another event for processing token_bucket update
+    // done in simplememobj
+
+
     AutoMBA();
     
     ~AutoMBA();
 
-
+    /// 
+    void handle_request(PacketPtr pkt);
     
-    bool add_request(PacketPtr *request);
-    void request_recv(PacketPtr *req, bool shadow);
-
-    void return_data_ramulator(PacketPtr& req);
-    
-    void check_return_data();
+    ///
+    void handle_response(PacketPtr pkt);
 
 
     void start();
     
-    void operate();
 
     void finish();
 };

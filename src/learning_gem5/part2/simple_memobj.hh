@@ -33,6 +33,7 @@
 #include "params/SimpleMemobj.hh"
 #include "sim/sim_object.hh"
 #include "sim/system.hh"
+#include "AutoMBA/automba.h"
 
 /**
  * A very simple memory object. Current implementation doesn't even cache
@@ -229,6 +230,9 @@ class SimpleMemobj : public SimObject
 
     /// Used for printing system-related info [Ivy]
     System *_system;
+
+    /// AutoMBA
+    AutoMBA *automba;
 
     /// add periodic monitoring and tuning event [Ivy]
     void processEvent_si();

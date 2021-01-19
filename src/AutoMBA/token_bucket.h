@@ -10,42 +10,37 @@
 
 class LabeledReq {
 public:
-    PacketPtr req; //[Ivy]
-    bool sampling = false;
-    int est_latency;
-    /// 
-    uint64_t accept, send, arrive = 0;
-    uint64_t shadow_arrive = 0;
+    /// pointer to packet of gem5
+    PacketPtr pkt; 
 
-    LabeledReq() { };
+    /// whether as a sample for latency predicting model
+    bool sampling = false;
+    
+    /// estimated latency
+    int est_latency;
+    
+    /// timestamp
+    uint64_t time_sent = 0;
+    uint64_t time_return = 0;
+    uint64_t shadow_return = 0;
+
+    LabeledReq(PacketPtr pkt, uint64_t time_sent) :
+        pkt(pkt), time_sent(time_sent)
+    { };
+    
     std::string get_type_string() {
-        /*
-        switch (req->type) {
-            case ramulator::Request::Type::READ:
-                return "READ";
-            case ramulator::Request::Type::WRITE:
-                return "WRITE";
-            case ramulator::Request::Type::REFRESH:
-                return "REFRESH";
-            case ramulator::Request::Type::POWERDOWN:
-                return "POWERDOWN";
-            case ramulator::Request::Type::SELFREFRESH:
-                return "SELFREFRESH";
-            case ramulator::Request::Type::EXTENSION:
-                return "EXTENSION";
-            default:
-                return "UNKNOWN";
-        */
-        if(req->isRead())
+        if(pkt->isRead())
             return "READ";
-        else if(req->isWrite())
+        else if(pkt->isWrite())
             return "WRITE";
         else
             return "OTHERS";
-        
     }
+
 };
 
+
+//[Ivy TODO] reconstruct 
 class TokenBucket {
 private:
     int size, freq, inc;
