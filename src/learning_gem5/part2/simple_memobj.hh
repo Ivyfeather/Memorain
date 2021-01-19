@@ -224,18 +224,21 @@ class SimpleMemobj : public SimObject
     /// Instantiation of the memory-side port
     MemSidePort memPort;
 
-    /// True if this is currently blocked waiting for a response.
+    /// True if this is currently blocked waiting for a response. [Ivy] abandon
     bool blocked;
 
     /// Used for printing system-related info [Ivy]
     System *_system;
 
     /// add periodic monitoring and tuning event [Ivy]
-    void processEvent();
+    void processEvent_si();
+    void processEvent_tb();
+     
+    EventFunctionWrapper event_si;
+    EventFunctionWrapper event_tb;
 
-    EventFunctionWrapper event;
-
-    Tick latency;
+    Tick latency_si;
+    Tick latency_tb;
 
     /// times of sampling in an updating interval [Ivy]
     int times_si;
