@@ -39,8 +39,11 @@ SimpleMemobj::SimpleMemobj(const SimpleMemobjParams &params) :
     cpuPort(params.name + ".cpu_side", this),
     memPort(params.name + ".mem_side", this),
     blocked(false), _system(NULL),
-    event([this]{processEvent();}, name()),
-    latency(SAMPLING_INTERVAL), times_si(0)
+    event_si([this]{processEvent_si();}, name()),
+    event_tb([this]{processEvent_tb();}, name()),
+    latency_si(SAMPLING_INTERVAL),
+    latency_tb(500000),//[Ivy TODO]
+    times_si(0)
 {
 }
 
@@ -192,7 +195,7 @@ SimpleMemobj::sendRangeChange()
 }
 
 void
-SimpleMemobj::processEvent()
+SimpleMemobj::processEvent_si()
 {
     if(times_si <= 1){
         DPRINTF(SimpleMemobj, "test: Updating!\n");      
@@ -201,7 +204,14 @@ SimpleMemobj::processEvent()
         DPRINTF(SimpleMemobj, "test: Sampling!\n");
         times_si --;
     }
-    schedule(event, curTick() + latency);
+    schedule(event_si, curTick() + latency_si);
+}
+
+void
+SimpleMemobj::processEvent_tb()
+{
+    DPRINTF(SimpleMemobj, "Adding tokens\n");
+    schedule(event_tb, curTick() + latency_tb);
 }
 
 void
@@ -213,5 +223,6 @@ SimpleMemobj::startup()
     for(int i = 0; i < system()->maxRequestors(); i++){
         DPRINTF(SimpleMemobj, "Requestor %d : Name %s\n", i, system()->getRequestorName(i));
     }
-    schedule(event, latency);
+    schedule(event_si, latency_si);
+    schedule(event_tb, latency_tb);
 }
