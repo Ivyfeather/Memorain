@@ -155,10 +155,10 @@ SimpleMemobj::MemSidePort::recvRangeChange()
 bool
 SimpleMemobj::handleRequest(PacketPtr pkt)
 {
-    /*
-    DPRINTF(SimpleMemobj, "Got request for addr %#x from %s\n", pkt->getAddr(),\
-     system()->getRequestorName(pkt->req->requestorId()));
-    */
+    
+    DPRINTF(SimpleMemobj, "Got request  for addr %#x\t from %s,\t cmd %s,\t attr %s%s%s\n",\
+     pkt->getAddr(), system()->getRequestorName(pkt->req->requestorId()), pkt->cmdString(), \
+     pkt->isRead()? "READ ":"", pkt->isWrite()?"WRITE ":"", pkt->isResponse()?"RESP":"");
 
     return memPort.sendPacket(pkt);
 }
@@ -166,10 +166,11 @@ SimpleMemobj::handleRequest(PacketPtr pkt)
 bool
 SimpleMemobj::handleResponse(PacketPtr pkt)
 {
-    /*
-    DPRINTF(SimpleMemobj, "Got response for addr %#x from %s\n", pkt->getAddr(),\
-     system()->getRequestorName(pkt->req->requestorId()));
-    */
+    
+    DPRINTF(SimpleMemobj, "Got response for addr %#x\t from %s,\t cmd %s,\t attr %s%s%s\n",\
+     pkt->getAddr(), system()->getRequestorName(pkt->req->requestorId()), pkt->cmdString(), \
+     pkt->isRead()? "READ ":"", pkt->isWrite()?"WRITE ":"", pkt->isResponse()?"RESP":"");    
+
     return cpuPort.sendPacket(pkt);
 }
 
