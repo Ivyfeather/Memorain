@@ -39,6 +39,7 @@ SimpleMemobj::SimpleMemobj(const SimpleMemobjParams &params) :
     cpuPort(params.name + ".cpu_side", this),
     memPort(params.name + ".mem_side", this),
     blocked(false), _system(NULL),
+    automba(new AutoMBA()),
     event_si([this]{processEvent_si();}, name()),
     event_tb([this]{processEvent_tb();}, name()),
     latency_si(SAMPLING_INTERVAL),
@@ -46,6 +47,8 @@ SimpleMemobj::SimpleMemobj(const SimpleMemobjParams &params) :
     times_si(0)
 {
 }
+
+// ~ delete AutoMBA
 
 Port &
 SimpleMemobj::getPort(const std::string &if_name, PortID idx)
@@ -160,7 +163,13 @@ SimpleMemobj::handleRequest(PacketPtr pkt)
      pkt->getAddr(), system()->getRequestorName(pkt->req->requestorId()), pkt->cmdString(), \
      pkt->isRead()? "READ ":"", pkt->isWrite()?"WRITE ":"", pkt->isResponse()?"RESP":"");
 
-    return memPort.sendPacket(pkt);
+    if(memPort.sendPacket(pkt)){
+        automba->handle_request(pkt);
+        return true;
+    }
+    else{
+        return false;
+    }
 }
 
 bool
@@ -171,7 +180,13 @@ SimpleMemobj::handleResponse(PacketPtr pkt)
      pkt->getAddr(), system()->getRequestorName(pkt->req->requestorId()), pkt->cmdString(), \
      pkt->isRead()? "READ ":"", pkt->isWrite()?"WRITE ":"", pkt->isResponse()?"RESP":"");    
 
-    return cpuPort.sendPacket(pkt);
+    if(cpuPort.sendPacket(pkt)){
+        automba->handle_response(pkt);
+        return true;
+    }
+    else{
+        return false;
+    }
 }
 
 void
@@ -195,14 +210,26 @@ SimpleMemobj::sendRangeChange()
     cpuPort.sendRangeChange();
 }
 
+#define PRINT_AUTOMBA
 void
 SimpleMemobj::processEvent_si()
 {
+#ifdef PRINT_AUTOMBA
+#define PRINT_RESET(ACC)\
+ automba->print_##ACC##_accumulators();\
+ automba->reset_##ACC##_accumulators();
+#else
+#define PRINT_RESET(ACC)
+#endif
+
     if(times_si <= 1){
         DPRINTF(SimpleMemobj, "test: Updating!\n");      
+        PRINT_RESET(si);
+        PRINT_RESET(ui);
         times_si = UPDATING_INTERVAL / SAMPLING_INTERVAL;
     }else{
         DPRINTF(SimpleMemobj, "test: Sampling!\n");
+        PRINT_RESET(si);
         times_si --;
     }
     schedule(event_si, curTick() + latency_si);

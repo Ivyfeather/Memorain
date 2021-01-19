@@ -7,7 +7,7 @@
 #include "tree_model.h"
 
 typedef struct {
-    uint64_t depart;
+    uint64_t time_sent;
     uint64_t addr;
     uint8_t channel;
     uint8_t rank;
@@ -23,13 +23,13 @@ private:
     const static bool PRINT_LATENCY_PRED_TRAINGING = false;
 
     const static int NUM_HISTORY_TABLES = 1 << 6;
-    const static int NUM_HISTORY_LENGTH = 9;
+    const static int NUM_HISTORY_LENGTH = (8 + 1);
     const static int LAST_REQ_IDX = NUM_HISTORY_LENGTH - 1;
     LatencyHistoryReg history_table[NUM_HISTORY_TABLES][NUM_HISTORY_LENGTH];
     
     Classifier *clf;
 
-    /// maually get channel&rank&bank...  [Ivy?]
+    /// check maually get channel&rank&bank...  [Ivy TODO]
     inline uint8_t get_channel(uint64_t addr) { return (addr >> 6) & 0x3; }
     inline uint8_t get_rank(uint64_t addr) { return (addr >> 14) & 0x1; }
     inline uint8_t get_bank(uint64_t addr) { return (addr >> 15) & 0x7; }
@@ -45,7 +45,7 @@ public:
         memset(history_table, 0, NUM_HISTORY_LENGTH*NUM_HISTORY_TABLES*sizeof(LatencyHistoryReg));
         FILE *fp = fopen("/home/chenxi/Memorain/util/AutoMBA/latency_tree.txt", "r");
         assert(fp && "open latency_tree.txt failed!!");
-        /// what is this [Ivy?]
+        /// trained output from tree
         int outputs[] = {
             268, 269, 279, 281, 284, 286, 306, 307, 309, 311, 
             314, 316, 319, 321, 322, 324, 326, 329, 338, 339
@@ -54,8 +54,8 @@ public:
         fclose(fp);
     };
 
-    void add(uint64_t depart, uint64_t addr, int write);
-    bool ack(uint64_t arrive, uint64_t addr, int *est_latency);
+    void add(uint64_t time_sent, uint64_t addr, int write);
+    bool ack(uint64_t time_return, uint64_t addr, int write, int &est_latency);
     
 };
 

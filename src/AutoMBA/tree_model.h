@@ -80,6 +80,7 @@ public:
         for (int i = 0; i < num_classes; i++) {
             outputs[i] = trees[i]->predict(inputs);
         }
+        // each tree ouput a result, take the #most of all results
         return val[std::distance(outputs, std::max_element(outputs, outputs + num_classes))];
     }
 };
