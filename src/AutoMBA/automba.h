@@ -103,10 +103,6 @@ public:
     void reset_ui_accumulators();
     void print_tb_parameters();
 
-    
-    /// set another event for processing token_bucket update
-    // done in simplememobj
-
 
     AutoMBA();
     
