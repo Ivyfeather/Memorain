@@ -43,19 +43,24 @@ public:
 //[Ivy TODO] reconstruct 
 class TokenBucket {
 private:
+
     int size, freq, inc;
+
+    /// bypass true: do not use token bucket
     bool bypass;
 
+    /// number of tokens left
     int tokens;
+
+    /// used to store reqs not yet sent to mem_ctrl
     std::queue<LabeledReq *> waiting_queue;
 
-    uint64_t cycle_counter;
 public:
-    TokenBucket(int s, int f, int i, bool b) : size(s), freq(f), inc(i), bypass(b) {
-        assert(s >= inc && "inc should not be greater than size");
-        tokens = i;
-        cycle_counter = 0;
-    };
+    TokenBucket(int s, int f, int i, bool b) : 
+        size(s), freq(f), inc(i), bypass(b), tokens(i)
+    {
+        assert(s >= inc && "inc should not be greater than size");        
+    }
 
     ~TokenBucket() { };
 
@@ -75,6 +80,7 @@ public:
 
     void add_request(LabeledReq *request, bool head);
     bool get_request(LabeledReq *&request);
+    
     int waiting_num() { return waiting_queue.size(); }
 
     void operate();
