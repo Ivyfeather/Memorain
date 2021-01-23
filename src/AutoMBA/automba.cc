@@ -116,8 +116,18 @@ AutoMBA::handle_request(PacketPtr pkt)
 {
     LabeledReq *lreq = new LabeledReq(pkt, curTick());
 
-    //[Ivy TODO] operate tb, put this req into tb[tag] and send req from tb
-    // for now, we directly forward it
+    //[Ivy] we no longer use an arbiter to choose which tb to get a req from & send the req
+    //  because champsim does it every cycle, but gem5 does this at handle_req action
+
+    // new implementation is more like the description in the PPT
+
+    // check if token_bucket[reqid] has enough token
+
+    // if true -> tell memobj to sendPacket(like always)
+
+    // if false -> tell memobj to return false
+
+
 
     // Put req into lpm
     int rid = get_packet_req_id(lreq->pkt);
@@ -181,4 +191,44 @@ AutoMBA::handle_response(PacketPtr pkt)
         }
     }
     assert(found && "No matching request found in pending list");
+}
+
+void
+AutoMBA::update_token_bucket()
+{
+    //[Ivy TODO] in old code, if NUM_CPUS > 1
+    if(policy !== Policy::CORE0_T){
+        // we have not implemented other policies
+        return;
+    }else{
+        //[Ivy TODO] we just take core 0 as QoS()
+        assert(slowdown_vec[0].size()>2);
+        double max_sd = *(std::max_element(slowdown_vec[0].begin(),slowdown_vec[0].end()));
+        double min_sd = *(std::min_element(slowdown_vec[0].begin(),slowdown_vec[0].end()));
+        double sum_sd = std::accumulate(slowdown_vec[0].begin(),slowdown_vec[0].end, 0.0);
+
+        double avg_sd = 0.05 * (sum_sd - max_sd - min_sd) / (slowdown_vec[0].size() - 2)
+        int tokens_inc;
+        if(avg_sd > 0.3)
+        {
+            //[Ivy TODO]
+            uint64_t bandwidth = acc[0][ACC_UI_READ_T] + acc[0][ACC_UI_WRITE_T];
+            int tmp_inc_diff = (NUM_CPUS - 1) * (average_slowdown - 0.1) * bandwidth * buckets[1]->get_freq() / updating_interval;
+            tmp_inc_diff = std::min(buckets[0]->get_inc() - 1, tmp_inc_diff);
+            inc_diff -= std::max(buckets[0]->get_inc() / 2, tmp_inc_diff);
+            std::cout << "tmp_inc " << tmp_inc_diff << " " << buckets[0]->get_inc() << std::endl;
+        }
+        else if(avg_sd > 0.1)
+        {
+            tokens_inc = -((average_slowdown - 0.1) / 0.05 + 1) * (NUM_CPUS - 1);
+        }
+        else if(avg_sd <= 0.08)
+        {
+            tokens_inc = NUM_CPUS - 1;
+        }
+        buckets[0]->set_inc(buckets[0]->get_inc() + tokens_inc);
+    }
+    for(int i = 0; i < NUM_CPUS; i++){
+        slowdown_vec[i].clear();
+    }
 }
