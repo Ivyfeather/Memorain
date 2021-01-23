@@ -114,6 +114,9 @@ public:
     ///
     void handle_response(PacketPtr pkt);
 
+    ///
+    void update_token_bucket();
+
 
     void start();
     
