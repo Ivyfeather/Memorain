@@ -109,7 +109,7 @@ public:
     ~AutoMBA();
 
     /// 
-    void handle_request(PacketPtr pkt);
+    bool handle_request(PacketPtr pkt);
     
     ///
     void handle_response(PacketPtr pkt);

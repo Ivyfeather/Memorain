@@ -103,6 +103,20 @@ void AutoMBA::print_tb_parameters()
 
 AutoMBA::AutoMBA()
 {
+    // initialize token buckets
+    int init_size = 60, init_freq = 5000, init_inc = 40;
+    for(int i = 0; i < NUM_TAGS; i++){
+        int cnt = 0;
+        // count the number of cores with tag i
+        for(int j = 0; j < NUM_CPUS; j++){
+            if(core_tags[j] == i) cnt++;
+        }
+    #ifdef AUTOMBA_ENABLE
+
+    #else
+
+    #endif
+    }
 
 }
 
@@ -111,7 +125,7 @@ AutoMBA::~AutoMBA()
     
 }
 
-void
+bool
 AutoMBA::handle_request(PacketPtr pkt)
 {
     LabeledReq *lreq = new LabeledReq(pkt, curTick());
@@ -119,9 +133,17 @@ AutoMBA::handle_request(PacketPtr pkt)
     //[Ivy] we no longer use an arbiter to choose which tb to get a req from & send the req
     //  because champsim does it every cycle, but gem5 does this at handle_req action
 
-    // new implementation is more like the description in the PPT
-
+    // new implementation is 
     // check if token_bucket[reqid] has enough token
+    
+    int pkt_tag = core_tags[pkt->requestorId()];
+    if(buckets[pkt_tag]){
+        
+    }
+    else{
+        return false;
+    }
+
 
     // if true -> tell memobj to sendPacket(like always)
 
@@ -129,7 +151,7 @@ AutoMBA::handle_request(PacketPtr pkt)
 
 
 
-    // Put req into lpm
+    // Put req into pending queue
     int rid = get_packet_req_id(lreq->pkt);
     pending_req[rid].push_back(lreq);
 
@@ -197,7 +219,7 @@ void
 AutoMBA::update_token_bucket()
 {
     //[Ivy TODO] in old code, if NUM_CPUS > 1
-    if(policy !== Policy::CORE0_T){
+    if(policy != Policy::CORE0_T){
         // we have not implemented other policies
         return;
     }else{
@@ -205,22 +227,22 @@ AutoMBA::update_token_bucket()
         assert(slowdown_vec[0].size()>2);
         double max_sd = *(std::max_element(slowdown_vec[0].begin(),slowdown_vec[0].end()));
         double min_sd = *(std::min_element(slowdown_vec[0].begin(),slowdown_vec[0].end()));
-        double sum_sd = std::accumulate(slowdown_vec[0].begin(),slowdown_vec[0].end, 0.0);
+        double sum_sd = std::accumulate(slowdown_vec[0].begin(),slowdown_vec[0].end(), 0.0);
 
-        double avg_sd = 0.05 * (sum_sd - max_sd - min_sd) / (slowdown_vec[0].size() - 2)
+        double avg_sd = 0.05 * (sum_sd - max_sd - min_sd) / (slowdown_vec[0].size() - 2);
         int tokens_inc;
         if(avg_sd > 0.3)
         {
             //[Ivy TODO]
             uint64_t bandwidth = acc[0][ACC_UI_READ_T] + acc[0][ACC_UI_WRITE_T];
-            int tmp_inc_diff = (NUM_CPUS - 1) * (average_slowdown - 0.1) * bandwidth * buckets[1]->get_freq() / updating_interval;
+            int tmp_inc_diff = (NUM_CPUS - 1) * (avg_sd - 0.1) * bandwidth * buckets[1]->get_freq() / updating_interval;
             tmp_inc_diff = std::min(buckets[0]->get_inc() - 1, tmp_inc_diff);
-            inc_diff -= std::max(buckets[0]->get_inc() / 2, tmp_inc_diff);
+            tokens_inc -= std::max(buckets[0]->get_inc() / 2, tmp_inc_diff);
             std::cout << "tmp_inc " << tmp_inc_diff << " " << buckets[0]->get_inc() << std::endl;
         }
         else if(avg_sd > 0.1)
         {
-            tokens_inc = -((average_slowdown - 0.1) / 0.05 + 1) * (NUM_CPUS - 1);
+            tokens_inc = -((avg_sd - 0.1) / 0.05 + 1) * (NUM_CPUS - 1);
         }
         else if(avg_sd <= 0.08)
         {

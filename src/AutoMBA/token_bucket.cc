@@ -25,10 +25,17 @@ bool TokenBucket::get_request(LabeledReq *&request) {
     return false;
 }
 
-void TokenBucket::operate() {
-    if (cycle_counter + 1 == freq) {
-        if (!bypass)
-            tokens = std::min(size, tokens + inc);
+void TokenBucket::add_tokens(){
+    if(!bypass)
+        tokens = std::min(size, tokens + inc);
+}
+
+bool TokenBucket::test_and_get(){
+    if(bypass || inc == size)
+        return true;
+    else if(tokens){
+        tokens--;
+        return true;
     }
-    cycle_counter = (cycle_counter + 1) % freq;
+    return false;
 }

@@ -83,7 +83,11 @@ public:
     
     int waiting_num() { return waiting_queue.size(); }
 
-    void operate();
+    /// when cycle == freq, add tokens (set_inc(tokens+inc))
+    void add_tokens();
+
+    /// if no tokens, return false; if there are, tokens-- and return true
+    bool test_and_get();
 };
 
 #endif
