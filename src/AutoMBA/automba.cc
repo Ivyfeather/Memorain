@@ -137,12 +137,12 @@ AutoMBA::handle_request(PacketPtr pkt)
     // check if token_bucket[reqid] has enough token
     
     int pkt_tag = core_tags[pkt->requestorId()];
-    if(buckets[pkt_tag]){
+    // if(buckets[pkt_tag]->test_and_get()){
         
-    }
-    else{
-        return false;
-    }
+    // }
+    // else{
+    //     return false;
+    // }
 
 
     // if true -> tell memobj to sendPacket(like always)
@@ -230,7 +230,7 @@ AutoMBA::update_token_bucket()
         double sum_sd = std::accumulate(slowdown_vec[0].begin(),slowdown_vec[0].end(), 0.0);
 
         double avg_sd = 0.05 * (sum_sd - max_sd - min_sd) / (slowdown_vec[0].size() - 2);
-        int tokens_inc;
+        int tokens_inc = 0;
         if(avg_sd > 0.3)
         {
             //[Ivy TODO]

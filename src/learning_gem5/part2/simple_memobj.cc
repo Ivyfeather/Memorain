@@ -36,8 +36,8 @@
 
 SimpleMemobj::SimpleMemobj(SimpleMemobjParams *params) :
     SimObject(params),
-    cpuPort(params.name + ".cpu_side", this),
-    memPort(params.name + ".mem_side", this),
+    cpuPort(params->name + ".cpu_side", this),
+    memPort(params->name + ".mem_side", this),
     blocked(false), _system(NULL),
     automba(new AutoMBA()),
     event_si([this]{processEvent_si();}, name()),

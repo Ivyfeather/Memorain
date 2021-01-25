@@ -262,11 +262,11 @@ System::System(Params *p)
     numSystemsRunning++;
 
     // Set back pointers to the system in all memories
-    for (int x = 0; x < params().memories.size(); x++)
-        params().memories[x]->system(this);
+    for (int x = 0; x < p->memories.size(); x++)
+        p->memories[x]->system(this);
 
-    if (params().use_memobj)
-        params().memobj->system(this);
+    if (p->use_memobj)
+        p->memobj->system(this);
 }
 
 System::~System()

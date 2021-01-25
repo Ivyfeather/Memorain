@@ -28,7 +28,7 @@ private:
     const static bool SHOW_ACTUAL_SLOWDOWN = (NUM_CPUS > 1);
     const static bool SHOW_PREDICTED_SLOWDOWN = (NUM_CPUS > 1);
 
-    const static bool NUM_TAGS = 2;
+    const static int NUM_TAGS = 2;
 
     /// the label passed from core
     int core_tags[NUM_CPUS] = {1};
