@@ -230,11 +230,13 @@ def config_mem(options, system):
                                              static_frontend_latency = '4ns')
                 elif opt_mem_type == "SimpleMemory":
                     mem_ctrl = m5.objects.SimpleMemory()
+                elif opt_mem_type == "DRAMsim3":
+                    mem_ctrl = m5.objects.DRAMsim3()
                 else:
                     mem_ctrl = m5.objects.MemCtrl()
 
                 # Hookup the controller to the interface and add to the list
-                if opt_mem_type != "SimpleMemory":
+                if opt_mem_type != "SimpleMemory" and opt_mem_type != "DRAMsim3":
                     mem_ctrl.dram = dram_intf
 
                 mem_ctrls.append(mem_ctrl)

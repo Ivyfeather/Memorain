@@ -49,9 +49,9 @@ if __name__ == "__main__":
         options.append('--num-cpus={}'.format(args.num_cpus))
 
     if args.dramsim:
-        options.append('--mem-type=DRAMsim3'
-             '--dramsim3-ini=/home/chenxi/gem5_dramsim/ext/dramsim3/'
-             'DRAMsim3/configs/DDR4_8Gb_x4_2133.ini')
+        options.append('--mem-type=DRAMsim3')
+            #  '--dramsim3-ini=/home/chenxi/gem5_dramsim/ext/dramsim3/'
+            #  'DRAMsim3/configs/DDR4_8Gb_x4_2133.ini')
 
     if args.caches:
         options.append('--caches')
