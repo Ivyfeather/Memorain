@@ -88,15 +88,15 @@ AutoMBA::reset_ui_accumulators()
 
 void AutoMBA::print_tb_parameters()
 {
-    // if (!PRINT_TB_PARAMETERS)
-    //     return;
-    // for (int i = 0; i < NUM_CPUS; i++) {
-    //     // print token buckets' parameters
-    //     std::cout << "token_bucket[" << i << "] parameters: ";
-    //     std::cout << buckets[i]->get_size() << " " << buckets[i]->get_freq() << " "
-    //               << buckets[i]->get_inc() << " " << buckets[i]->get_bypass() << " "
-    //               << buckets[i]->get_tokens() << std::endl;
-    // }
+    if (!PRINT_TB_PARAMETERS)
+        return;
+    for (int i = 0; i < NUM_TAGS; i++) {
+        // print token buckets' parameters
+        std::cout << "token_bucket[" << i << "] parameters: ";
+        std::cout << buckets[i]->get_size() << " " << buckets[i]->get_freq() << " "
+                  << buckets[i]->get_inc() << " " << buckets[i]->get_bypass() << " "
+                  << buckets[i]->get_tokens() << std::endl;
+    }
 }
 
 
@@ -104,60 +104,56 @@ void AutoMBA::print_tb_parameters()
 AutoMBA::AutoMBA()
 {
     // initialize token buckets
-    int init_size = 60, init_freq = 5000, init_inc = 40;
+    //[Ivy TODO] token bucket should be carefully set 
+    int init_size = 60, init_freq = 1000000, init_inc = 20;
     for(int i = 0; i < NUM_TAGS; i++){
         int cnt = 0;
         // count the number of cores with tag i
         for(int j = 0; j < NUM_CPUS; j++){
             if(core_tags[j] == i) cnt++;
         }
-    #ifdef AUTOMBA_ENABLE
-
-    #else
-
-    #endif
+#ifdef AUTOMBA_ENABLE
+        // tb[0] bypass=false, others true
+        buckets[i] = new TokenBucket(cnt*init_size, init_freq, cnt*init_inc, (i>=1));    
+#else
+        buckets[i] = new TokenBucket(cnt*init_size, init_freq, cnt*init_inc, true);    
+#endif
     }
 
 }
 
 AutoMBA::~AutoMBA()
 {
-    
+    for(int i = 0;i < NUM_TAGS; i++)
+        delete buckets[i];
 }
 
 bool
 AutoMBA::handle_request(PacketPtr pkt)
 {
-    LabeledReq *lreq = new LabeledReq(pkt, curTick());
-
     //[Ivy] we no longer use an arbiter to choose which tb to get a req from & send the req
     //  because champsim does it every cycle, but gem5 does this at handle_req action
 
     // new implementation is 
-    // check if token_bucket[reqid] has enough token
-    
+    // check if token_bucket[reqid] has enough tokens
     int pkt_tag = core_tags[pkt->requestorId()];
-    // if(buckets[pkt_tag]->test_and_get()){
-        
-    // }
-    // else{
-    //     return false;
-    // }
+    if(buckets[pkt_tag]->test_and_get()){
+        // if true 
+        // Put req into pending queue
+        LabeledReq *lreq = new LabeledReq(pkt, curTick());
+        int rid = get_packet_req_id(lreq->pkt);
+        pending_req[rid].push_back(lreq);
 
+        // Send req to latency predicting model
+        lpm[rid].add(curTick(), pkt->getAddr(), pkt->isWrite());
 
-    // if true -> tell memobj to sendPacket(like always)
-
-    // if false -> tell memobj to return false
-
-
-
-    // Put req into pending queue
-    int rid = get_packet_req_id(lreq->pkt);
-    pending_req[rid].push_back(lreq);
-
-    // Send req to latency predicting model
-    lpm[rid].add(curTick(), pkt->getAddr(), pkt->isWrite());
-
+        // tell memobj to sendPacket(like always)
+        return true;
+    }
+    else{
+        // if false -> tell memobj to return false
+        return false;
+    }
 }
     
 void
@@ -215,6 +211,56 @@ AutoMBA::handle_response(PacketPtr pkt)
     assert(found && "No matching request found in pending list");
 }
 
+void AutoMBA::operate_slowdown_pred() {
+    //! static 
+    static bool has_init[NUM_CPUS] = {false};
+    static uint64_t last_solo_cycle[NUM_CPUS];
+    for (int i = 0; i < NUM_CPUS; i++) {
+        std::vector<double> slowdown_est_inputs;
+        //如果至少有一条 已经返回的read
+        if (acc[i][ACC_SI_READ_T]) {
+            // [TODO] 100000 
+            slowdown_est_inputs.push_back((double)(100000 - acc[i][ACC_SI_NMC_COUNT]) / acc[i][ACC_SI_READ_T]);
+        }
+        else {
+            slowdown_est_inputs.push_back(0.0);
+        }
+        
+        slowdown_est_inputs.push_back(acc[i][ACC_SI_WRITE_T]);
+        if (acc[i][ACC_SI_LATENCY_MODEL] > 0) {
+            double lats = (double)acc[i][ACC_SI_LATENCY] / acc[i][ACC_SI_LATENCY_MODEL];
+            slowdown_est_inputs.push_back(lats);
+        }
+        else {
+            slowdown_est_inputs.push_back(1);
+        }
+        slowdown_est_inputs.push_back(acc[i][ACC_SI_NMC_COUNT]);
+        
+        // if (SHOW_ACTUAL_SLOWDOWN) {
+        //     if (!has_init[i]) {
+        //         cr[i]->get(&last_solo_cycle[i], 0);
+        //         has_init[i] = true;
+        //     }
+        //     uint64_t curr_instr = ooo_cpu[i].num_retired, curr_solo_cycle;
+        //     cr[i]->get(&curr_solo_cycle, curr_instr);
+        //     // 见git的README - 关键设计要点
+        //     double actual_slowdown = ((double)sampling_interval / (curr_solo_cycle - last_solo_cycle[i])) - 1;
+        //     std::cout << "actual_slowdown[" << i << "] ";
+        //     for (auto x : slowdown_est_inputs) {
+        //         std::cout << x << " ";
+        //     }
+        //     std::cout << actual_slowdown << std::endl;
+        //     last_solo_cycle[i] = curr_solo_cycle;
+        // }
+        
+        int predicted_slowdown = estimator.estimate(&slowdown_est_inputs);
+        slowdown_vec[i].push_back(predicted_slowdown);
+        if (SHOW_PREDICTED_SLOWDOWN)
+            std::cout << "predicted[" << i << "] " << predicted_slowdown << std::endl;
+    }
+}
+
+
 void
 AutoMBA::update_token_bucket()
 {
@@ -223,6 +269,7 @@ AutoMBA::update_token_bucket()
         // we have not implemented other policies
         return;
     }else{
+        // operate_slowdown_pred();
         //[Ivy TODO] we just take core 0 as QoS()
         assert(slowdown_vec[0].size()>2);
         double max_sd = *(std::max_element(slowdown_vec[0].begin(),slowdown_vec[0].end()));

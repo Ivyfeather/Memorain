@@ -163,11 +163,10 @@ SimpleMemobj::handleRequest(PacketPtr pkt)
      pkt->getAddr(), system()->getRequestorName(pkt->req->requestorId()), pkt->cmdString(), \
      pkt->isRead()? "READ ":"", pkt->isWrite()?"WRITE ":"", pkt->isResponse()?"RESP":"");
 
-    if(memPort.sendPacket(pkt)){
-        automba->handle_request(pkt);
-        return true;
+    if(automba->handle_request(pkt)){
+        return memPort.sendPacket(pkt);
     }
-    else{
+    else{ // if not enough tokens
         return false;
     }
 }
@@ -228,14 +227,15 @@ SimpleMemobj::processEvent_si()
 #define PRINT_RESET(ACC)
 #endif
 
+    PRINT_RESET(si);
     if(times_si <= 1){
         DPRINTF(SimpleMemobj, "test: Updating!\n");      
-        PRINT_RESET(si);
         PRINT_RESET(ui);
+        automba->print_tb_parameters();
+        // automba->update_token_bucket();
         times_si = UPDATING_INTERVAL / SAMPLING_INTERVAL;
     }else{
         DPRINTF(SimpleMemobj, "test: Sampling!\n");
-        PRINT_RESET(si);
         times_si --;
     }
     schedule(event_si, curTick() + latency_si);
@@ -245,7 +245,9 @@ void
 SimpleMemobj::processEvent_tb()
 {
     DPRINTF(SimpleMemobj, "Adding tokens\n");
-    schedule(event_tb, curTick() + latency_tb);
+    //[Ivy TODO]core 0
+    automba->bucket(0)->add_tokens();
+    schedule(event_tb, curTick() + automba->bucket(0)->get_freq());
 }
 
 void

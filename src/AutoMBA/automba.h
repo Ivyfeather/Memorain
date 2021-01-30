@@ -31,7 +31,7 @@ private:
     const static int NUM_TAGS = 2;
 
     /// the label passed from core
-    int core_tags[NUM_CPUS] = {1};
+    int core_tags[NUM_CPUS] = {0,0,0,1,1,1,1};
     
     //// a token bucket for each tag
     TokenBucket *buckets[NUM_TAGS];
@@ -116,8 +116,8 @@ public:
 
     ///
     void update_token_bucket();
-
-
+    TokenBucket *bucket(int i){ return buckets[i]; }
+    void operate_slowdown_pred();
     void start();
     
 

@@ -1,6 +1,7 @@
 #include "latency_pred.h"
 #include "token_bucket.h"
 
+// since we do not use waiting queue
 void TokenBucket::add_request(LabeledReq *request, bool head=false) {
     waiting_queue.push(request);
     if (head) {
