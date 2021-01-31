@@ -45,6 +45,9 @@ from m5.objects import *
 
 from common.Benchmarks import *
 from common import ObjectList
+from common import CpuConfig
+from common import MemConfig
+from common import PlatformConfig
 
 vio_9p_help = """\
 Enable the Virtio 9P device and set the path to share. The default 9p path is
@@ -159,10 +162,42 @@ def addNoISAOptions(parser):
              "Direct parameters of the root object are not accessible, "
              "only parameters of its children.")
 
+def addSpec2006Options(parser):
+    parser.add_option("-b", "--benchmark",\
+            type="string", default="",\
+            help="The SPEC benchmark to be loaded."
+            )
+    parser.add_option("--benchmark-stdout",\
+            type="string", default="",\
+            help="Absolute path for stdout redirection for the benchmark."
+            )
+    parser.add_option("--benchmark-stderr",
+            type="string", default="",\
+            help="Absolute path for stderr redirection for the benchmark."
+            )
+    parser.add_option("--spec-2006-bench",
+            action="store_true",
+            help="use spec 2006 benchmarks as workloads"
+            )
+    parser.add_option("--spec-2017-bench",
+            action="store_true",
+            help="use spec 2017 benchmarks as workloads"
+            )
+    parser.add_option("--spec-cmd-mode",
+            action="store_true",
+            help="use spec commands from cmd"
+            )
+    parser.add_option("--spec-size",
+            action="store",
+            choices=['ref', 'train', 'test'],
+            help="spec input size for 2017"
+            )
+
 # Add common options that assume a non-NULL ISA.
 def addCommonOptions(parser):
     # start by adding the base options that do not assume an ISA
     addNoISAOptions(parser)
+    addSpec2006Options(parser)
 
     # system options
     parser.add_option("--list-cpu-types",
@@ -232,6 +267,11 @@ def addCommonOptions(parser):
                       Elastic Trace probe in a capture simulation and
                       Trace CPU in a replay simulation""", default="")
 
+    parser.add_option("--branch-trace-en", action="store_true",
+                      help="""Enable capture of branch outcome.""")
+    parser.add_option("--branch-trace-file", action="store", type="string",
+                      help="""File to capture of branch outcome.""")
+
     parser.add_option("-l", "--lpae", action="store_true")
     parser.add_option("-V", "--virtualisation", action="store_true")
 
@@ -296,6 +336,8 @@ def addCommonOptions(parser):
                       help="Enable basic block profiling for SimPoints")
     parser.add_option("--simpoint-interval", type="int", default=10000000,
                       help="SimPoint interval in num of instructions")
+    parser.add_option("--override-interval", action="store_true",
+                      help="Allow to overrdie SimPoint interval on restoring")
     parser.add_option("--take-simpoint-checkpoints", action="store", type="string",
         help="<simpoint file,weight file,interval-length,warmup-length>")
     parser.add_option("--restore-simpoint-checkpoint", action="store_true",
