@@ -8,8 +8,8 @@ cpt_dirs = {
     },
     2017: {
         'ARM': None,
-        'RISCV': osp.expanduser('/home/share/shrink_spec2017_simpoint_cpts'),
-        # 'RISCV': osp.expanduser('/home/chenxi/spec2017_simpoint_cpts'),
+        # 'RISCV': osp.expanduser('/home/share/shrink_spec2017_simpoint_cpts'),
+        'RISCV': osp.expanduser('/home/chenxi/spec2017_simpoint_cpts'),
     },
 }
 
