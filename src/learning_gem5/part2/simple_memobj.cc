@@ -33,6 +33,8 @@
 #include "mem/packet_access.hh"
 #include "sim/system.hh"
 #include "AutoMBA/automba.h"
+#include "cpu/simple/timing.hh"
+#include "cpu/simple/exec_context.hh"
 
 SimpleMemobj::SimpleMemobj(SimpleMemobjParams *params) :
     SimObject(params),
@@ -220,6 +222,10 @@ SimpleMemobj::processEvent_si()
     PRINT_RESET(si);
     automba->print_tb_parameters();
 
+    // [TEST] print cpu0 inst
+    TimingSimpleCPU *cpu0 = (TimingSimpleCPU *)(system()->getRequestors(5)->obj);
+    printf("cpu0 inst: %lld\n", cpu0->threadInfo[cpu0->curThread]->numInst );
+
     // when reaching Updating Interval
     if(times_si <= 1){
         DPRINTF(SimpleMemobj, "test: Updating!\n");      
@@ -257,7 +263,7 @@ SimpleMemobj::startup()
     schedule(event_tb, latency_tb);
 
     // check access for CPU
-    /* for(int i=0;i<system()->maxRequestors();i++){
+    for(int i=0;i<system()->maxRequestors();i++){
         printf("addr simobject %d: %p\n",i,system()->getRequestors(i)->obj);
-    }*/
+    }
 }

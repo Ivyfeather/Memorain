@@ -79,7 +79,7 @@ class SimpleExecContext;
 
 class BaseSimpleCPU : public BaseCPU
 {
-  protected:
+  public:
     ThreadID curThread;
     BPredUnit *branchPred;
 

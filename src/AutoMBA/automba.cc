@@ -230,9 +230,7 @@ AutoMBA::count_NMC()
         if(!isMC[i]){
             acc[i][ACC_SI_NMC_COUNT] += curTick() - NMC_startTick[i];
             NMC_startTick[i] = curTick();
-        }else{
-
-        }
+        }else{}
     }
 }
 

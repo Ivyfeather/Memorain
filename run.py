@@ -8,7 +8,8 @@ config = 'configs/example/se.py'
 
 wkld_set = {
     "hello":"tests/test-progs/hello/bin/riscv/linux/hello",
-    "insttest":"tests/test-progs/insttest/bin/riscv/linux-rv64i/insttest"
+    "insttest":"tests/test-progs/insttest/bin/riscv/linux-rv64i/insttest",
+    "test":"tests/test-progs/bench/test"
     }
 
 def add_options(parser):
