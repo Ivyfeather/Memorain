@@ -31,7 +31,7 @@ private:
     const static int NUM_TAGS = 2;
 
     /// the label passed from core
-    int core_tags[NUM_CPUS] = {0,0,0,1,1,1,1};
+    int core_tags[NUM_CPUS] = {0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0};
     
     //// a token bucket for each tag
     TokenBucket *buckets[NUM_TAGS];
@@ -47,6 +47,10 @@ private:
     /// lantency predicting model
     LatencyPred lpm[NUM_CPUS];
     
+    /// for counting NMC  
+    bool isMC[NUM_CPUS] = {false};
+    uint64_t NMC_startTick[NUM_CPUS] = {0}; 
+
     /// 
     // CycleRecorder *cr[NUM_CPUS] = {NULL};
 
@@ -118,10 +122,8 @@ public:
     void update_token_bucket();
     TokenBucket *bucket(int i){ return buckets[i]; }
     void operate_slowdown_pred();
-    void start();
     
-
-    void finish();
+    void count_NMC();
 };
 
 #endif

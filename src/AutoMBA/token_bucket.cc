@@ -14,7 +14,7 @@ void TokenBucket::add_request(LabeledReq *request, bool head=false) {
         }
     }
 }
-
+// since we do not use waiting queue
 bool TokenBucket::get_request(LabeledReq *&request) {
     if ((bypass || inc == size || tokens) && !waiting_queue.empty()) {
         if (!bypass && tokens)

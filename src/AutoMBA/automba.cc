@@ -8,11 +8,9 @@ get_packet_req_id(PacketPtr pkt)
     return pkt->req->requestorId();
 }
 
-//[Ivy TODO] test whether pkt1->req==pkt2->req works directly
 bool
 req_match(PacketPtr pkt1, PacketPtr pkt2)
 {
-    // return get_packet_req_id(pkt1)==get_packet_req_id(pkt2) && pkt1->getAddr()==pkt2->getAddr();
     return pkt1->req == pkt2->req;
 }
 
@@ -23,6 +21,7 @@ AutoMBA::print_si_accumulators()
 {
     if (!PRINT_ACCUMULATORS)
         return;
+    std::cout << "curTick" << curTick() << std::endl;
     for (int i = 0; i <= NUM_CPUS; i++) {
         // std::cout << i << std::endl;
         // print sampling interval accumulators
@@ -147,6 +146,12 @@ AutoMBA::handle_request(PacketPtr pkt)
         // Send req to latency predicting model
         lpm[rid].add(curTick(), pkt->getAddr(), pkt->isWrite());
 
+        // for counting NMC
+        if(!isMC[rid]){
+            isMC[rid] = true;
+            acc[rid][ACC_SI_NMC_COUNT] += curTick() - NMC_startTick[rid];
+        }
+        
         // tell memobj to sendPacket(like always)
         return true;
     }
@@ -205,13 +210,36 @@ AutoMBA::handle_response(PacketPtr pkt)
             // if we wish to continue the iteration, it needs review
 
             found = true;
+            
+            // for counting NMC
+            if(pending_req[rid].empty()){
+                isMC[rid] = false;
+                NMC_startTick[rid] = curTick();
+            }
+
             break;
         }
     }
     assert(found && "No matching request found in pending list");
 }
 
-void AutoMBA::operate_slowdown_pred() {
+void
+AutoMBA::count_NMC()
+{
+    for(int i=0; i < NUM_CPUS; i++){
+        if(!isMC[i]){
+            acc[i][ACC_SI_NMC_COUNT] += curTick() - NMC_startTick[i];
+            NMC_startTick[i] = curTick();
+        }else{
+
+        }
+    }
+}
+
+void
+AutoMBA::operate_slowdown_pred() 
+{
+    count_NMC();
     //! static 
     static bool has_init[NUM_CPUS] = {false};
     static uint64_t last_solo_cycle[NUM_CPUS];
@@ -269,7 +297,6 @@ AutoMBA::update_token_bucket()
         // we have not implemented other policies
         return;
     }else{
-        // operate_slowdown_pred();
         //[Ivy TODO] we just take core 0 as QoS()
         assert(slowdown_vec[0].size()>2);
         double max_sd = *(std::max_element(slowdown_vec[0].begin(),slowdown_vec[0].end()));

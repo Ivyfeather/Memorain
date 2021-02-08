@@ -25,8 +25,8 @@
 #define AUTOMBA_ENABLE
 
 #define NUM_CPUS (3 + 4*4)
-#define SAMPLING_INTERVAL 1000000 //change to 10_0000 later
-#define UPDATING_INTERVAL 5000000
+#define SAMPLING_INTERVAL 50000000 
+#define UPDATING_INTERVAL 250000000
 
 // gem5 Global frequency set at 1000000000000 ticks per second
 #endif

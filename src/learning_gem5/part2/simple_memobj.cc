@@ -226,15 +226,21 @@ SimpleMemobj::processEvent_si()
 #else
 #define PRINT_RESET(ACC)
 #endif
+    // slowdown predict
+    automba->operate_slowdown_pred();
 
+    // print accumulators
     PRINT_RESET(si);
+    automba->print_tb_parameters();
+
+    // when Updating Interval
     if(times_si <= 1){
         DPRINTF(SimpleMemobj, "test: Updating!\n");      
         PRINT_RESET(ui);
-        automba->print_tb_parameters();
         // automba->update_token_bucket();
         times_si = UPDATING_INTERVAL / SAMPLING_INTERVAL;
-    }else{
+    }
+    else{
         DPRINTF(SimpleMemobj, "test: Sampling!\n");
         times_si --;
     }

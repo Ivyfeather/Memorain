@@ -279,5 +279,7 @@ if options.wait_gdb:
     for cpu in system.cpu:
         cpu.wait_for_remote_gdb = True
 
+# m5.ticks.fixGlobalFrequency()
+# m5.stats.periodicStatDump(m5.ticks.fromSeconds(0.5E-5))
 root = Root(full_system = False, system = system)
 Simulation.run(options, root, system, FutureClass)
