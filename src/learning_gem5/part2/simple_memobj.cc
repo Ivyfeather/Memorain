@@ -256,7 +256,8 @@ SimpleMemobj::startup()
     schedule(event_si, latency_si);
     schedule(event_tb, latency_tb);
 
-    for(int i=0;i<system()->maxRequestors();i++){
+    // check access for CPU
+    /* for(int i=0;i<system()->maxRequestors();i++){
         printf("addr simobject %d: %p\n",i,system()->getRequestors(i)->obj);
-    }
+    }*/
 }

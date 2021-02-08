@@ -65,6 +65,7 @@
 #include "debug/Fetch.hh"
 #include "debug/HtmCpu.hh"
 #include "debug/Quiesce.hh"
+#include "debug/SoloTrace.hh"
 #include "mem/packet.hh"
 #include "mem/request.hh"
 #include "params/BaseSimpleCPU.hh"
@@ -168,6 +169,7 @@ BaseSimpleCPU::countInst()
 
         system->totalNumInsts++;
         t_info.thread->funcExeInst++;
+        DPRINTF(SoloTrace,"inst cnt %llu\n", t_info.numInst);
     }
     t_info.numOp++;
     t_info.numOps++;
