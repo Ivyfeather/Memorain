@@ -124,6 +124,8 @@ public:
     void operate_slowdown_pred();
     
     void count_NMC();
+
+    int get_core_tags(int i){return core_tags[i];}
 };
 
 #endif

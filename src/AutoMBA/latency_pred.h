@@ -54,7 +54,10 @@ public:
         fclose(fp);
     };
 
+    /* add req in history table */
     void add(uint64_t time_sent, uint64_t addr, int write);
+    
+    /* when recv resp, return whether to sample, if true, also return est_latencty */
     bool ack(uint64_t time_return, uint64_t addr, int write, int &est_latency);
     
 };

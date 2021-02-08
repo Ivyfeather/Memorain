@@ -111,15 +111,8 @@ SimpleMemobj::CPUSidePort::recvTimingReq(PacketPtr pkt)
 void
 SimpleMemobj::CPUSidePort::recvRespRetry()
 {
-    // We should have a blocked packet if this function is called.
-    assert(blockedPacket != nullptr);
-
-    // Grab the blocked packet.
-    PacketPtr pkt = blockedPacket;
-    blockedPacket = nullptr;
-
-    // Try to resend it. It's possible that it fails again.
-    sendPacket(pkt);
+    // tell mem to send resp again
+    owner->memPort.sendRetryResp();
 }
 
 bool
@@ -138,15 +131,8 @@ SimpleMemobj::MemSidePort::recvTimingResp(PacketPtr pkt)
 void
 SimpleMemobj::MemSidePort::recvReqRetry()
 {
-    // We should have a blocked packet if this function is called.
-    assert(blockedPacket != nullptr);
-
-    // Grab the blocked packet.
-    PacketPtr pkt = blockedPacket;
-    blockedPacket = nullptr;
-
-    // Try to resend it. It's possible that it fails again.
-    sendPacket(pkt);
+    // tell cpu to send req again
+    owner->cpuPort.sendRetryReq();
 }
 
 void
@@ -216,6 +202,7 @@ SimpleMemobjParams::create()
 }
 
 #define PRINT_AUTOMBA
+
 void
 SimpleMemobj::processEvent_si()
 {
@@ -233,7 +220,7 @@ SimpleMemobj::processEvent_si()
     PRINT_RESET(si);
     automba->print_tb_parameters();
 
-    // when Updating Interval
+    // when reaching Updating Interval
     if(times_si <= 1){
         DPRINTF(SimpleMemobj, "test: Updating!\n");      
         PRINT_RESET(ui);
@@ -263,8 +250,13 @@ SimpleMemobj::startup()
     assert((UPDATING_INTERVAL % SAMPLING_INTERVAL == 0) && "ui must be a multiple of si");
     times_si = UPDATING_INTERVAL / SAMPLING_INTERVAL;
     for(int i = 0; i < system()->maxRequestors(); i++){
-        DPRINTF(SimpleMemobj, "Requestor %d : Name %s\n", i, system()->getRequestorName(i));
+        printf("Requestor %d : Name %s, tag %d\n",\
+         i, system()->getRequestorName(i).c_str(), automba->get_core_tags(i));
     }
     schedule(event_si, latency_si);
     schedule(event_tb, latency_tb);
+
+    for(int i=0;i<system()->maxRequestors();i++){
+        printf("addr simobject %d: %p\n",i,system()->getRequestors(i)->obj);
+    }
 }

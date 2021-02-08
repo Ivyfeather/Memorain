@@ -502,6 +502,9 @@ class System : public SimObject, public PCEventScope
     /** Get the number of requestors registered in the system */
     RequestorID maxRequestors() { return requestors.size(); }
 
+    /** Get CPU info [Ivy]*/
+    RequestorInfo* getRequestors(int i){ assert(i<requestors.size()); return &requestors[i]; }
+
   protected:
     /** helper function for getRequestorId */
     RequestorID _getRequestorId(const SimObject* requestor,
