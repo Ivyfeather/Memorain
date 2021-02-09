@@ -41,7 +41,7 @@ SimpleMemobj::SimpleMemobj(SimpleMemobjParams *params) :
     cpuPort(params->name + ".cpu_side", this),
     memPort(params->name + ".mem_side", this),
     blocked(false), _system(NULL),
-    automba(new AutoMBA()),
+    automba(new AutoMBA((void *)this)),
     event_si([this]{processEvent_si();}, name()),
     event_tb([this]{processEvent_tb();}, name()),
     latency_si(SAMPLING_INTERVAL),
@@ -223,8 +223,8 @@ SimpleMemobj::processEvent_si()
     automba->print_tb_parameters();
 
     // [TEST] print cpu0 inst
-    TimingSimpleCPU *cpu0 = (TimingSimpleCPU *)(system()->getRequestors(5)->obj);
-    printf("cpu0 inst: %lld\n", cpu0->threadInfo[cpu0->curThread]->numInst );
+    // TimingSimpleCPU *cpu0 = (TimingSimpleCPU *)(system()->getRequestors(5)->obj);
+    // printf("cpu0 inst: %lld\n", cpu0->threadInfo[cpu0->curThread]->numInst );
 
     // when reaching Updating Interval
     if(times_si <= 1){
@@ -263,7 +263,7 @@ SimpleMemobj::startup()
     schedule(event_tb, latency_tb);
 
     // check access for CPU
-    for(int i=0;i<system()->maxRequestors();i++){
-        printf("addr simobject %d: %p\n",i,system()->getRequestors(i)->obj);
-    }
+    // for(int i=0;i<system()->maxRequestors();i++){
+    //     printf("addr simobject %d: %p\n",i,system()->getRequestors(i)->obj);
+    // }
 }

@@ -25,7 +25,8 @@ private:
 
     const static bool PRINT_MEMORY_ACCESS_LOG = false;
     const static bool RECORD_SOLO_RUNTIME = (NUM_CPUS == 1);
-    const static bool SHOW_ACTUAL_SLOWDOWN = (NUM_CPUS > 1);
+    // const static bool SHOW_ACTUAL_SLOWDOWN = (NUM_CPUS > 1);
+    const static bool SHOW_ACTUAL_SLOWDOWN = true;
     const static bool SHOW_PREDICTED_SLOWDOWN = (NUM_CPUS > 1);
 
     const static int NUM_TAGS = 2;
@@ -52,7 +53,7 @@ private:
     uint64_t NMC_startTick[NUM_CPUS] = {0}; 
 
     /// 
-    // CycleRecorder *cr[NUM_CPUS] = {NULL};
+    CycleRecorder *cr = NULL;
 
     /// info counters
     static const int ACC_NUM = 64;
@@ -84,8 +85,10 @@ private:
     uint64_t sampling_cycle = 0, updating_cycle = 0;
 
     /// slowdown estimate
+    ///  for cpu0 alone
     SlowdownEstimator estimator;
-    std::vector<double> slowdown_vec[NUM_CPUS];
+    std::vector<double> slowdown_vec;
+    int64_t lastsi_instCnt = 0;
 
     /// memory access control policy
     enum class Policy {
@@ -108,24 +111,31 @@ public:
     void print_tb_parameters();
 
 
-    AutoMBA();
+    AutoMBA(void *obj);
     
     ~AutoMBA();
 
-    /// 
+    /// used to handle reqs from cpus to memctrl
     bool handle_request(PacketPtr pkt);
     
-    ///
+    /// used to handle resps from memctrl to cpus
     void handle_response(PacketPtr pkt);
 
-    ///
+    /// update token bucket params every updating interval
     void update_token_bucket();
-    TokenBucket *bucket(int i){ return buckets[i]; }
+
+    /// operate slowdown pred for cpu0 (every sampling interval)
     void operate_slowdown_pred();
+
+    TokenBucket *bucket(int i){ return buckets[i]; }
     
     void count_NMC();
 
     int get_core_tags(int i){return core_tags[i];}
+
+    /// Used for printing system-related info [Ivy]
+    /// consider pass cpu0->info alone?[Ivy TODO]
+    void *obj;
 };
 
 #endif

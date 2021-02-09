@@ -1,5 +1,6 @@
 #include "automba.h"
-
+#include "learning_gem5/part2/simple_memobj.hh"
+#include "cpu/simple/timing.hh"
 /* util func */
 /// get requestor ID of a packet
 RequestorID
@@ -100,8 +101,10 @@ void AutoMBA::print_tb_parameters()
 
 
 
-AutoMBA::AutoMBA()
+AutoMBA::AutoMBA(void *in_obj)
 {
+    obj = in_obj;
+
     // initialize token buckets
     //[Ivy TODO] token bucket should be carefully set 
     int init_size = 60, init_freq = 1000000, init_inc = 20;
@@ -119,6 +122,9 @@ AutoMBA::AutoMBA()
 #endif
     }
 
+    if(SHOW_ACTUAL_SLOWDOWN){
+        cr = new CycleRecorder("/home/chenxi/Memorain/result/solo_insttest_l1.log");
+    }
 }
 
 AutoMBA::~AutoMBA()
@@ -251,7 +257,40 @@ void
 AutoMBA::operate_slowdown_pred() 
 {
     count_NMC();
+
+    // predict slowdown for core 0 alone
+    std::vector<double> slowdown_est_inputs;
+
+
+    if(SHOW_ACTUAL_SLOWDOWN){
+        SimpleMemobj *memobj = (SimpleMemobj *)obj;
+        TimingSimpleCPU *cpu0 = (TimingSimpleCPU *)(memobj->system()->getRequestors(5)->obj);
+        Counter curInst = cpu0->threadInfo[cpu0->curThread]->numInst;
+
+        uint64_t solo_interval_ticks = cr->Interval_Ticks(curInst);
+        // TEST
+        std::cout<<"actual: "<< lastsi_instCnt << " -> " << curInst << std::endl;
+        std::cout<< "solo tick interval " << solo_interval_ticks << std::endl;
+
+        // same #inst, (mix_time/solo_time) - 1 is slowdown
+        //      |      ticks            |   insts
+        // solo | cr->Interval_Ticks()  | curInst - lastsi_instCnt
+        // mix  | SAMPLING INTERVAL     | same
+
+        lastsi_instCnt = curInst;
+        double act_sd = ((double)SAMPLING_INTERVAL/solo_interval_ticks - 1.0);
+        std::cout << "actual_slowdown " << act_sd << std::endl;
+    }
+
+    // int predicted_slowdown = estimator.estimate(&slowdown_est_inputs);
+    // slowdown_vec.push_back(predicted_slowdown);
+    // if (SHOW_PREDICTED_SLOWDOWN)
+    //     std::cout << "predicted[" << 0 << "] " << predicted_slowdown << std::endl;
+
+
+
     //! static 
+    /*
     static bool has_init[NUM_CPUS] = {false};
     static uint64_t last_solo_cycle[NUM_CPUS];
     for (int i = 0; i < NUM_CPUS; i++) {
@@ -296,7 +335,7 @@ AutoMBA::operate_slowdown_pred()
         slowdown_vec[i].push_back(predicted_slowdown);
         if (SHOW_PREDICTED_SLOWDOWN)
             std::cout << "predicted[" << i << "] " << predicted_slowdown << std::endl;
-    }
+    }*/
 }
 
 
@@ -309,12 +348,12 @@ AutoMBA::update_token_bucket()
         return;
     }else{
         //[Ivy TODO] we just take core 0 as QoS()
-        assert(slowdown_vec[0].size()>2);
-        double max_sd = *(std::max_element(slowdown_vec[0].begin(),slowdown_vec[0].end()));
-        double min_sd = *(std::min_element(slowdown_vec[0].begin(),slowdown_vec[0].end()));
-        double sum_sd = std::accumulate(slowdown_vec[0].begin(),slowdown_vec[0].end(), 0.0);
+        assert(slowdown_vec.size()>2);
+        double max_sd = *(std::max_element(slowdown_vec.begin(),slowdown_vec.end()));
+        double min_sd = *(std::min_element(slowdown_vec.begin(),slowdown_vec.end()));
+        double sum_sd = std::accumulate(slowdown_vec.begin(),slowdown_vec.end(), 0.0);
 
-        double avg_sd = 0.05 * (sum_sd - max_sd - min_sd) / (slowdown_vec[0].size() - 2);
+        double avg_sd = 0.05 * (sum_sd - max_sd - min_sd) / (slowdown_vec.size() - 2);
         int tokens_inc = 0;
         if(avg_sd > 0.3)
         {
@@ -335,7 +374,7 @@ AutoMBA::update_token_bucket()
         }
         buckets[0]->set_inc(buckets[0]->get_inc() + tokens_inc);
     }
-    for(int i = 0; i < NUM_CPUS; i++){
-        slowdown_vec[i].clear();
-    }
+    
+    slowdown_vec.clear();
+
 }
