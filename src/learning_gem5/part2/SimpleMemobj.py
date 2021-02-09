@@ -34,3 +34,5 @@ class SimpleMemobj(SimObject):
 
     cpu_side = ResponsePort("CPU side port, receives requests")
     mem_side = RequestPort("Memory side port, sends requests")
+
+    num_cpus = Param.Int(1, "number of cpus")
