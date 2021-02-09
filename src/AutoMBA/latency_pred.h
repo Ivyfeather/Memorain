@@ -19,22 +19,24 @@ typedef struct {
 
 class LatencyPred {
 private:
-    const static bool RUN_LATENCY_PREDICTION = (NUM_CPUS > 1);
+    const static bool RUN_LATENCY_PREDICTION = true;
     const static bool PRINT_LATENCY_PRED_TRAINGING = false;
 
-    const static int NUM_HISTORY_TABLES = 1 << 6;
+    const static int NUM_HISTORY_TABLES = 1 << 6; // index (channel, rank, bank)
     const static int NUM_HISTORY_LENGTH = (8 + 1);
     const static int LAST_REQ_IDX = NUM_HISTORY_LENGTH - 1;
     LatencyHistoryReg history_table[NUM_HISTORY_TABLES][NUM_HISTORY_LENGTH];
     
     Classifier *clf;
 
-    /// check maually get channel&rank&bank...  [Ivy TODO]
-    inline uint8_t get_channel(uint64_t addr) { return (addr >> 6) & 0x3; }
-    inline uint8_t get_rank(uint64_t addr) { return (addr >> 14) & 0x1; }
-    inline uint8_t get_bank(uint64_t addr) { return (addr >> 15) & 0x7; }
-    inline uint8_t get_column(uint64_t addr) { return (addr >> 8) & 0x3f; }
-    inline uint16_t get_row(uint64_t addr) { return (addr >> 18) & 0x3fff; }
+    /// for Memorain/ext/dramsim3/DRAMsim3/configs/DDR4_8Gb_x8_2400.ini
+    inline uint8_t get_channel(uint64_t addr) { return (addr >> 18) & 0x0; }
+    inline uint8_t get_rank(uint64_t addr) { return (addr >> 17) & 0x1; }
+    inline uint8_t get_bank(uint64_t addr) { return (addr >> 15) & 0x3; }
+    inline uint8_t get_bankgroup(uint64_t addr) {return (addr >> 13) & 0x3; }
+    inline uint8_t get_column(uint64_t addr) { return (addr >> 6) & 0x7f; }
+    inline uint16_t get_row(uint64_t addr) { return (addr >> 18) & 0xffff; }
+    // [Ivy TODO] change index-arrangement later
     inline uint32_t get_history_table_index(uint64_t addr) {
         return (get_channel(addr) << 4) | (get_rank(addr) << 3) | get_bank(addr);
     }
