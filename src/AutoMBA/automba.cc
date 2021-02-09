@@ -136,11 +136,24 @@ AutoMBA::handle_request(PacketPtr pkt)
     // new implementation is 
     // check if token_bucket[reqid] has enough tokens
     int pkt_tag = core_tags[pkt->requestorId()];
+    int rid = get_packet_req_id(pkt);
+
+    // if tb allows to send, but memPort.sendPacket fails
+    // then this req has been added into pending again, but not truely sent
+    // when memctrl calls sendreqretry, this req will be added in pending queue once again
+
+    // check if already in pending queue
+    for(auto it = pending_req[rid].begin(); it!= pending_req[rid].end(); it++){
+        LabeledReq *lreq = (*it);
+        if(req_match(lreq->pkt, pkt))
+            return true;
+    }
+
     if(buckets[pkt_tag]->test_and_get()){
         // if true 
         // Put req into pending queue
         LabeledReq *lreq = new LabeledReq(pkt, curTick());
-        int rid = get_packet_req_id(lreq->pkt);
+        
         pending_req[rid].push_back(lreq);
 
         // Send req to latency predicting model
