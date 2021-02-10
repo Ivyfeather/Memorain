@@ -20,7 +20,7 @@ typedef struct {
 class LatencyPred {
 private:
     const static bool RUN_LATENCY_PREDICTION = true;
-    const static bool PRINT_LATENCY_PRED_TRAINGING = true;
+    const static bool PRINT_LATENCY_PRED_TRAINGING = false;
 
     const static int NUM_HISTORY_TABLES = 1 << 6; // index (channel, rank, bank)
     const static int NUM_HISTORY_LENGTH = (8 + 1);

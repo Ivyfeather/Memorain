@@ -107,7 +107,7 @@ AutoMBA::AutoMBA(void *in_obj)
 
     // initialize token buckets
     //[Ivy TODO] token bucket should be carefully set 
-    int init_size = 60, init_freq = 1000000, init_inc = 20;
+    int init_size = 60, init_freq = 1000000, init_inc = 10;
     for(int i = 0; i < NUM_TAGS; i++){
         int cnt = 0;
         // count the number of cores with tag i
@@ -123,7 +123,7 @@ AutoMBA::AutoMBA(void *in_obj)
     }
 
     if(SHOW_ACTUAL_SLOWDOWN){
-        cr = new CycleRecorder("/home/chenxi/Memorain/result/solo_insttest_l1.log");
+        cr = new CycleRecorder("/home/chenxi/Memorain/result/solo_stream_l1.log");
     }
 }
 
@@ -267,9 +267,11 @@ AutoMBA::operate_slowdown_pred()
         TimingSimpleCPU *cpu0 = (TimingSimpleCPU *)(memobj->system()->getRequestors(5)->obj);
         Counter curInst = cpu0->threadInfo[cpu0->curThread]->numInst;
 
-        uint64_t solo_interval_ticks = cr->Interval_Ticks(curInst);
+        
         // TEST
         std::cout<<"actual: "<< lastsi_instCnt << " -> " << curInst << std::endl;
+        uint64_t solo_interval_ticks = cr->Interval_Ticks(curInst);
+
         std::cout<< "solo tick interval " << solo_interval_ticks << std::endl;
 
         // same #inst, (mix_time/solo_time) - 1 is slowdown
@@ -280,7 +282,13 @@ AutoMBA::operate_slowdown_pred()
         lastsi_instCnt = curInst;
         double act_sd = ((double)SAMPLING_INTERVAL/solo_interval_ticks - 1.0);
         std::cout << "actual_slowdown " << act_sd << std::endl;
+
+
+        //[Ivy TODO] for now, we use actual slowdown instead of predicted
+        slowdown_vec.push_back(act_sd);
+
     }
+
 
     // int predicted_slowdown = estimator.estimate(&slowdown_est_inputs);
     // slowdown_vec.push_back(predicted_slowdown);
@@ -347,14 +355,15 @@ AutoMBA::update_token_bucket()
         // we have not implemented other policies
         return;
     }else{
-        //[Ivy TODO] we just take core 0 as QoS()
+        //we just take core 0 as QoS()
         assert(slowdown_vec.size()>2);
         double max_sd = *(std::max_element(slowdown_vec.begin(),slowdown_vec.end()));
         double min_sd = *(std::min_element(slowdown_vec.begin(),slowdown_vec.end()));
         double sum_sd = std::accumulate(slowdown_vec.begin(),slowdown_vec.end(), 0.0);
 
-        double avg_sd = 0.05 * (sum_sd - max_sd - min_sd) / (slowdown_vec.size() - 2);
+        double avg_sd = (sum_sd - max_sd - min_sd) / (slowdown_vec.size() - 2);
         int tokens_inc = 0;
+        std::cout << "average actual_slowdown: "<< avg_sd << std::endl;
         if(avg_sd > 0.3)
         {
             //[Ivy TODO]

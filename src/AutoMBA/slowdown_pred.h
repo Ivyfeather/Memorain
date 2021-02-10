@@ -13,6 +13,7 @@ class CycleRecorder{
 private:
     FILE *fp;
     uint64_t lastsi_instTick = 0;
+    int64_t lastsi_instcnt = 0;
 
 public:
     CycleRecorder(const char *filename){
@@ -31,7 +32,8 @@ public:
 
 class SlowdownEstimator {
 private:
-    const static bool RUN_SLOWDOWN_PREDICTION = (NUM_CPUS > 1);
+//[Ivy TODO] = (NUM_CPUS > 1)
+    const static bool RUN_SLOWDOWN_PREDICTION = true;
     
     Classifier *clf;
 public:

@@ -208,19 +208,17 @@ SimpleMemobjParams::create()
 void
 SimpleMemobj::processEvent_si()
 {
-#ifdef PRINT_AUTOMBA
 #define PRINT_RESET(ACC)\
  automba->print_##ACC##_accumulators();\
  automba->reset_##ACC##_accumulators();
-#else
-#define PRINT_RESET(ACC)
-#endif
     // slowdown predict
     automba->operate_slowdown_pred();
 
+#ifdef PRINT_AUTOMBA
     // print accumulators
     PRINT_RESET(si);
     automba->print_tb_parameters();
+#endif
 
     // [TEST] print cpu0 inst
     // TimingSimpleCPU *cpu0 = (TimingSimpleCPU *)(system()->getRequestors(5)->obj);
@@ -229,8 +227,10 @@ SimpleMemobj::processEvent_si()
     // when reaching Updating Interval
     if(times_si <= 1){
         DPRINTF(SimpleMemobj, "test: Updating!\n");      
+#ifdef PRINT_AUTOMBA
         PRINT_RESET(ui);
-        // automba->update_token_bucket();
+#endif
+        automba->update_token_bucket();
         times_si = UPDATING_INTERVAL / SAMPLING_INTERVAL;
     }
     else{

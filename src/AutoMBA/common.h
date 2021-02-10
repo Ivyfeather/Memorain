@@ -24,7 +24,7 @@
 
 #define AUTOMBA_ENABLE
 
-#define NUM_CPUS (3 + 4*4)
+#define NUM_CPUS (3 + 8*4)
 #define SAMPLING_INTERVAL 50000000 
 #define UPDATING_INTERVAL 250000000
 

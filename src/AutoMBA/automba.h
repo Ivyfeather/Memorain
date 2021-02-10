@@ -9,16 +9,18 @@
 #include "mem/packet.hh"
 #include "mem/request.hh"
 
-class Arbiter { //仲裁
-public:
-    // tags: application info
-    // status: tb status, currently refers to #waiting requests
-    int get_core(int tag[NUM_CPUS], int status[NUM_CPUS]);
-};
+// class Arbiter { //仲裁
+// public:
+//     // tags: application info
+//     // status: tb status, currently refers to #waiting requests
+//     int get_core(int tag[NUM_CPUS], int status[NUM_CPUS]);
+// };
 
 
 class AutoMBA{
 private:
+    int num_cpus = 1;
+
     ///[Ivy TODO] use these as #define
     const static bool PRINT_ACCUMULATORS = true;
     const static bool PRINT_TB_PARAMETERS = true;
@@ -42,9 +44,6 @@ private:
     ///   but have not yet recevied response
     std::vector<LabeledReq *> pending_req[NUM_CPUS];
     
-    /// decide which tokenbucket to send from
-    Arbiter arbiter;
-
     /// lantency predicting model
     LatencyPred lpm[NUM_CPUS];
     
