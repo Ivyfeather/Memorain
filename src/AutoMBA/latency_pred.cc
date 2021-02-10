@@ -18,7 +18,7 @@ void LatencyPred::add(uint64_t time_sent, uint64_t addr, int write) {
 bool LatencyPred::get_prediction_inputs(uint32_t idx, std::vector<double> *inputs) {
     for (int i = 0; i < LAST_REQ_IDX; i++) {
         double time_sent_cycle = history_table[idx][LAST_REQ_IDX].time_sent - history_table[idx][i].time_sent;
-        time_sent_cycle = std::min(time_sent_cycle, 32767.0);
+        time_sent_cycle = std::min(time_sent_cycle, 16383500.0);
         double row_diff = (history_table[idx][LAST_REQ_IDX].row == history_table[idx][i].row) ? 0 : 1;
         double col_diff = history_table[idx][LAST_REQ_IDX].column - history_table[idx][i].column;
         inputs->push_back(time_sent_cycle);
@@ -41,7 +41,7 @@ bool LatencyPred::ack(uint64_t time_return, uint64_t addr, int write, int &est_l
             int latency = time_return - history_table[idx][LAST_REQ_IDX].time_sent;
             std::cout << "Train_data: ";
             for (auto x : inputs) {
-                std::cout << x << " ";
+                std::cout << (int64_t)x << " ";
             }
             std::cout << latency << std::endl;
         }
