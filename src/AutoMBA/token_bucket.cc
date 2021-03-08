@@ -32,8 +32,9 @@ void TokenBucket::add_tokens(){
 }
 
 bool TokenBucket::test_and_get(){
-    if(bypass || inc == size)
+    if(bypass || inc == size){
         return true;
+    }
     else if(tokens){
         tokens--;
         return true;

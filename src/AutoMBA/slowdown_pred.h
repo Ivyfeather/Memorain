@@ -13,7 +13,6 @@ class CycleRecorder{
 private:
     FILE *fp;
     uint64_t lastsi_instTick = 0;
-    int64_t lastsi_instcnt = 0;
 
 public:
     CycleRecorder(const char *filename){
