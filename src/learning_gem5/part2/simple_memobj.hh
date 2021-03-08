@@ -57,7 +57,7 @@ class SimpleMemobj : public SimObject
         SimpleMemobj *owner;
 
         /// True if the port needs to send a retry req.
-        bool needRetry;
+        int needRetry;
 
         /// If we tried to send a packet and it was blocked, store it here
         PacketPtr blockedPacket;
@@ -67,7 +67,7 @@ class SimpleMemobj : public SimObject
          * Constructor. Just calls the superclass constructor.
          */
         CPUSidePort(const std::string& name, SimpleMemobj *owner) :
-            ResponsePort(name, owner), owner(owner), needRetry(false),
+            ResponsePort(name, owner), owner(owner), needRetry(0),
             blockedPacket(nullptr)
         { }
 

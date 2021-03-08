@@ -83,9 +83,9 @@ SimpleMemobj::CPUSidePort::getAddrRanges() const
 void
 SimpleMemobj::CPUSidePort::trySendRetry()
 {
-    if (needRetry && blockedPacket == nullptr) {
+    while (needRetry) {
         // Only send a retry if the port is now completely free
-        needRetry = false;
+        needRetry --;
         DPRINTF(SimpleMemobj, "Sending retry req for %d\n", id);
         sendRetryReq();
     }
@@ -103,7 +103,7 @@ SimpleMemobj::CPUSidePort::recvTimingReq(PacketPtr pkt)
 {
     // Just forward to the memobj.
     if (!owner->handleRequest(pkt)) {
-        needRetry = true;
+        needRetry ++;
         return false;
     } else {
         return true;
@@ -230,7 +230,7 @@ SimpleMemobj::processEvent_si()
 #ifdef PRINT_AUTOMBA
         PRINT_RESET(ui);
 #endif
-        automba->update_token_bucket();
+        // automba->update_token_bucket();
         times_si = UPDATING_INTERVAL / SAMPLING_INTERVAL;
     }
     else{
@@ -246,6 +246,7 @@ SimpleMemobj::processEvent_tb()
     DPRINTF(SimpleMemobj, "Adding tokens\n");
     //[Ivy TODO]core 0
     automba->bucket(0)->add_tokens();
+    cpuPort.trySendRetry();
     schedule(event_tb, curTick() + automba->bucket(0)->get_freq());
 }
 
