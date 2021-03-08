@@ -30,8 +30,15 @@ def add_options(parser):
 
 def get_workloads(wkld_str):
     wklds = []
-    for wk in wkld_str.split("-"):
-        wklds.append(wkld_set[wk])
+    wkld_split = wkld_str.split("-")
+    for i, name in enumerate(wkld_split):
+        # like 4-hello, means hello-hello-hello-hello
+        if(name.isdigit()):
+            wkld = wkld_split[i+1]
+            for cnt in range(int(name)):
+                wklds.append(wkld_set[wkld])
+        else:
+            wklds.append(wkld_set[name])
     return wklds
 
 if __name__ == "__main__":
