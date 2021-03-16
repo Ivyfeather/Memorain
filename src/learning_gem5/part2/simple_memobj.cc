@@ -151,11 +151,14 @@ SimpleMemobj::handleRequest(PacketPtr pkt)
      pkt->getAddr(), system()->getRequestorName(pkt->req->requestorId()), pkt->cmdString(), \
      pkt->isRead()? "READ ":"", pkt->isWrite()?"WRITE ":"", pkt->isResponse()?"RESP":"");
 
+    // if there are enough tokens, send req to memctrl
     if(automba->handle_request(pkt)){
         return memPort.sendPacket(pkt);
     }
-    else{ // if not enough tokens
-        return false;
+    // if not, req has been added to waiting queue, so we return true, 
+    // which means req received successfully
+    else{ 
+        return true;
     }
 }
 
@@ -246,6 +249,13 @@ SimpleMemobj::processEvent_tb()
     DPRINTF(SimpleMemobj, "Adding tokens\n");
     //[Ivy TODO]core 0
     automba->bucket(0)->add_tokens();
+    PacketPtr pkt = NULL;
+
+    //////!!!!!!
+    while((pkt = automba->get_waiting_req())){
+        memPort.sendPacket(pkt);
+    }
+
     cpuPort.trySendRetry();
     schedule(event_tb, curTick() + automba->bucket(0)->get_freq());
 }

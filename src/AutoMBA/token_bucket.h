@@ -79,7 +79,7 @@ public:
     inline int get_tokens() { return (bypass) ? 1 : tokens; }
 
     void add_request(LabeledReq *request, bool head);
-    bool get_request(LabeledReq *&request);
+    LabeledReq* get_request();
     
     int waiting_num() { return waiting_queue.size(); }
 

@@ -107,7 +107,7 @@ AutoMBA::AutoMBA(void *in_obj)
 
     // initialize token buckets
     //[Ivy TODO] token bucket should be carefully set 
-    int init_size = 60, init_freq = 1000000, init_inc = 10;
+    int init_size = 60, init_freq = 1000000, init_inc = 1;
     for(int i = 0; i < NUM_TAGS; i++){
         int cnt = 0;
         // count the number of cores with tag i
@@ -147,35 +147,34 @@ AutoMBA::handle_request(PacketPtr pkt)
     // if tb allows to send, but memPort.sendPacket fails
     // then this req has been added into pending again, but not truely sent
     // when memctrl calls sendreqretry, this req will be added in pending queue once again
-
-    // check if already in pending queue
+    // the following checks if req already in pending queue
     for(auto it = pending_req[rid].begin(); it!= pending_req[rid].end(); it++){
         LabeledReq *lreq = (*it);
         if(req_match(lreq->pkt, pkt))
             return true;
     }
 
-    if(buckets[pkt_tag]->test_and_get()){
-        // if true 
-        // Put req into pending queue
-        LabeledReq *lreq = new LabeledReq(pkt, curTick());
-        
-        pending_req[rid].push_back(lreq);
+    // Put req into pending queue
+    LabeledReq *lreq = new LabeledReq(pkt, curTick());
+    pending_req[rid].push_back(lreq);
 
-        // Send req to latency predicting model
-        lpm[rid].add(curTick(), pkt->getAddr(), pkt->isWrite());
+    // Send req to latency predicting model
+    lpm[rid].add(curTick(), pkt->getAddr(), pkt->isWrite());
 
-        // for counting NMC
-        if(!isMC[rid]){
-            isMC[rid] = true;
-            acc[rid][ACC_SI_NMC_COUNT] += curTick() - NMC_startTick[rid];
-        }
-        
-        // tell memobj to sendPacket(like always)
+    // for counting NMC
+    if(!isMC[rid]){
+        isMC[rid] = true;
+        acc[rid][ACC_SI_NMC_COUNT] += curTick() - NMC_startTick[rid];
+    }
+
+    // check if tb has enough tokens
+    if(buckets[pkt_tag]->test_and_get()){     
+        // if true, tell memobj to sendPacket(like always)
         return true;
     }
     else{
-        // if false -> tell memobj to return false
+        // if false, add req to waiting queue 
+        buckets[pkt_tag]->add_request(lreq, false);
         return false;
     }
 }
@@ -386,4 +385,16 @@ AutoMBA::update_token_bucket()
     
     slowdown_vec.clear();
 
+}
+
+PacketPtr
+AutoMBA::get_waiting_req()
+{
+    for(int i = 0; i < NUM_TAGS; i++){
+        LabeledReq *lreq = buckets[i]->get_request();
+        if(lreq){
+            return lreq->pkt; 
+        }
+    }
+    return NULL;
 }

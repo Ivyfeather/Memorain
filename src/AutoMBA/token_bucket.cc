@@ -1,7 +1,7 @@
 #include "latency_pred.h"
 #include "token_bucket.h"
 
-// since we do not use waiting queue
+// add req to waiting queue
 void TokenBucket::add_request(LabeledReq *request, bool head=false) {
     waiting_queue.push(request);
     if (head) {
@@ -14,7 +14,7 @@ void TokenBucket::add_request(LabeledReq *request, bool head=false) {
         }
     }
 }
-// since we do not use waiting queue
+/*
 bool TokenBucket::get_request(LabeledReq *&request) {
     if ((bypass || inc == size || tokens) && !waiting_queue.empty()) {
         if (!bypass && tokens)
@@ -24,6 +24,20 @@ bool TokenBucket::get_request(LabeledReq *&request) {
         return true;
     }
     return false;
+*/
+
+LabeledReq* TokenBucket::get_request() {
+    // no req in waiting queue
+    if(waiting_queue.empty()){
+        return NULL;
+    }
+    if(bypass || inc == size || tokens > 0){
+        tokens --;
+        LabeledReq* req = waiting_queue.front();
+        waiting_queue.pop(); //pop_front
+        return req;
+    }
+    return NULL;
 }
 
 void TokenBucket::add_tokens(){
@@ -32,11 +46,8 @@ void TokenBucket::add_tokens(){
 }
 
 bool TokenBucket::test_and_get(){
-    if(bypass || inc == size){
-        return true;
-    }
-    else if(tokens){
-        tokens--;
+    if(bypass || inc == size || tokens > 0){
+        tokens --;
         return true;
     }
     return false;

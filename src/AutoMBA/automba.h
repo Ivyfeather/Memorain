@@ -28,8 +28,8 @@ private:
     const static bool PRINT_MEMORY_ACCESS_LOG = false;
     const static bool RECORD_SOLO_RUNTIME = (NUM_CPUS == 1);
     // const static bool SHOW_ACTUAL_SLOWDOWN = (NUM_CPUS > 1);
-    const static bool SHOW_ACTUAL_SLOWDOWN = true;
-    const static bool SHOW_PREDICTED_SLOWDOWN = (NUM_CPUS > 1);
+    const static bool SHOW_ACTUAL_SLOWDOWN = false;
+    const static bool SHOW_PREDICTED_SLOWDOWN = false;//(NUM_CPUS > 1);
 
     const static int NUM_TAGS = 2;
 
@@ -125,6 +125,9 @@ public:
 
     /// operate slowdown pred for cpu0 (every sampling interval)
     void operate_slowdown_pred();
+
+    /// get a waiting req from token buckets for memobj to send
+    PacketPtr get_waiting_req();
 
     TokenBucket *bucket(int i){ return buckets[i]; }
     
