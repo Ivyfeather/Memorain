@@ -31,7 +31,7 @@ public:
 
 class SlowdownEstimator {
 private:
-//[Ivy TODO] = (NUM_CPUS > 1)
+//[Ivy TODO] = (NUM_REQS > 1)
     const static bool RUN_SLOWDOWN_PREDICTION = true;
     
     Classifier *clf;

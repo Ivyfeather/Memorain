@@ -13,7 +13,7 @@
 // public:
 //     // tags: application info
 //     // status: tb status, currently refers to #waiting requests
-//     int get_core(int tag[NUM_CPUS], int status[NUM_CPUS]);
+//     int get_core(int tag[NUM_REQS], int status[NUM_REQS]);
 // };
 
 
@@ -25,16 +25,13 @@ private:
     const static bool PRINT_ACCUMULATORS = true;
     const static bool PRINT_TB_PARAMETERS = true;
 
-    const static bool PRINT_MEMORY_ACCESS_LOG = false;
-    const static bool RECORD_SOLO_RUNTIME = (NUM_CPUS == 1);
-    // const static bool SHOW_ACTUAL_SLOWDOWN = (NUM_CPUS > 1);
-    const static bool SHOW_ACTUAL_SLOWDOWN = false;
-    const static bool SHOW_PREDICTED_SLOWDOWN = false;//(NUM_CPUS > 1);
+    const static bool SHOW_ACTUAL_SLOWDOWN = true;
+    const static bool SHOW_PREDICTED_SLOWDOWN = false;//(NUM_REQS > 1);
 
     const static int NUM_TAGS = 2;
 
     /// the label passed from core
-    int core_tags[NUM_CPUS] = {0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0};
+    int core_tags[NUM_REQS] = {0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0};
     
     //// a token bucket for each tag
     TokenBucket *buckets[NUM_TAGS];
@@ -42,21 +39,21 @@ private:
     /// pending req 
     /// - used to store reqs that have been sent to mem_ctrl 
     ///   but have not yet recevied response
-    std::vector<LabeledReq *> pending_req[NUM_CPUS];
+    std::vector<LabeledReq *> pending_req[NUM_REQS];
     
     /// lantency predicting model
-    LatencyPred lpm[NUM_CPUS];
+    LatencyPred lpm[NUM_REQS];
     
     /// for counting NMC  
-    bool isMC[NUM_CPUS] = {false};
-    uint64_t NMC_startTick[NUM_CPUS] = {0}; 
+    bool isMC[NUM_REQS] = {false};
+    uint64_t NMC_startTick[NUM_REQS] = {0}; 
 
     /// 
     CycleRecorder *cr = NULL;
 
     /// info counters
     static const int ACC_NUM = 64;
-    uint64_t acc[NUM_CPUS+1][ACC_NUM] = {{0}};
+    uint64_t acc[NUM_REQS+1][ACC_NUM] = {{0}};
     enum {
         ACC_SI_READ_T,
         ACC_SI_WRITE_T,
@@ -110,9 +107,37 @@ public:
     void print_tb_parameters();
 
 
-    AutoMBA(void *obj);
+    AutoMBA(void *in_obj)
+    {
+        obj = in_obj;
+
+        // initialize token buckets
+        //[Ivy TODO] token bucket should be carefully set 
+        int init_size = 60, init_freq = 10000000, init_inc = 2;
+        for(int i = 0; i < NUM_TAGS; i++){
+            int cnt = 0;
+            // count the number of cores with tag i
+            for(int j = 0; j < NUM_REQS; j++){
+                if(core_tags[j] == i) cnt++;
+            }
+    #ifdef AUTOMBA_ENABLE
+            // tb[0] bypass=false, others true
+            buckets[i] = new TokenBucket(cnt*init_size, init_freq, cnt*init_inc, (i>=1));    
+    #else
+            buckets[i] = new TokenBucket(cnt*init_size, init_freq, cnt*init_inc, true);    
+    #endif
+        }
+
+        if(SHOW_ACTUAL_SLOWDOWN){
+            cr = new CycleRecorder(SOLO_TRACE_PATH);
+        }
+    }
     
-    ~AutoMBA();
+    ~AutoMBA()
+    {
+        for(int i = 0;i < NUM_TAGS; i++)
+            delete buckets[i];
+    }
 
     /// used to handle reqs from cpus to memctrl
     bool handle_request(PacketPtr pkt);

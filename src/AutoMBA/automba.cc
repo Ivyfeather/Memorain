@@ -23,11 +23,11 @@ AutoMBA::print_si_accumulators()
     if (!PRINT_ACCUMULATORS)
         return;
     std::cout << "curTick" << curTick() << std::endl;
-    for (int i = 0; i <= NUM_CPUS; i++) {
+    for (int i = 0; i <= NUM_REQS; i++) {
         // std::cout << i << std::endl;
         // print sampling interval accumulators
         std::cout << "si_accumulators[" << i << "]: ";
-        int num_acc = (i == NUM_CPUS) ? (int)ACC_ALL_MAX : (int)ACC_SI_MAX;
+        int num_acc = (i == NUM_REQS) ? (int)ACC_ALL_MAX : (int)ACC_SI_MAX;
         for (int j = 0; j < num_acc; j++) {
             if (j == num_acc - 1) {
                 std::cout << acc[i][j] << std::endl;
@@ -44,7 +44,7 @@ AutoMBA::print_ui_accumulators()
 {
     if (!PRINT_ACCUMULATORS)
         return;
-    for (int i = 0; i < NUM_CPUS; i++) {
+    for (int i = 0; i < NUM_REQS; i++) {
         // print updating interval accumulators
         std::cout << "ui_accumulators[" << i << "]: ";
         for (int j = ACC_SI_MAX+1; j < ACC_UI_MAX; j++) {
@@ -61,7 +61,7 @@ AutoMBA::print_ui_accumulators()
 void
 AutoMBA::reset_si_accumulators()
 {
-    for (int i = 0; i < NUM_CPUS; i++) {
+    for (int i = 0; i < NUM_REQS; i++) {
         // reset sampling interval accumulators
         acc[i][ACC_SI_READ_T] = 0;
         acc[i][ACC_SI_WRITE_T] = 0;
@@ -72,14 +72,14 @@ AutoMBA::reset_si_accumulators()
         acc[i][ACC_SI_NMC_COUNT] = 0;
 
     }
-    acc[NUM_CPUS][ACC_ALL_READ_T] = 0;
-    acc[NUM_CPUS][ACC_ALL_WRITE_T] = 0;
+    acc[NUM_REQS][ACC_ALL_READ_T] = 0;
+    acc[NUM_REQS][ACC_ALL_WRITE_T] = 0;
 }
 
 void
 AutoMBA::reset_ui_accumulators()
 {
-    for (int i = 0; i < NUM_CPUS; i++) {
+    for (int i = 0; i < NUM_REQS; i++) {
         // reset updating interval accumulators
         acc[i][ACC_UI_READ_T] = 0;
         acc[i][ACC_UI_WRITE_T] = 0;
@@ -97,40 +97,6 @@ void AutoMBA::print_tb_parameters()
                   << buckets[i]->get_inc() << " " << buckets[i]->get_bypass() << " "
                   << buckets[i]->get_tokens() << std::endl;
     }
-}
-
-
-
-AutoMBA::AutoMBA(void *in_obj)
-{
-    obj = in_obj;
-
-    // initialize token buckets
-    //[Ivy TODO] token bucket should be carefully set 
-    int init_size = 60, init_freq = 1000000, init_inc = 1;
-    for(int i = 0; i < NUM_TAGS; i++){
-        int cnt = 0;
-        // count the number of cores with tag i
-        for(int j = 0; j < NUM_CPUS; j++){
-            if(core_tags[j] == i) cnt++;
-        }
-#ifdef AUTOMBA_ENABLE
-        // tb[0] bypass=false, others true
-        buckets[i] = new TokenBucket(cnt*init_size, init_freq, cnt*init_inc, (i>=1));    
-#else
-        buckets[i] = new TokenBucket(cnt*init_size, init_freq, cnt*init_inc, true);    
-#endif
-    }
-
-    if(SHOW_ACTUAL_SLOWDOWN){
-        cr = new CycleRecorder("/home/chenxi/Memorain/result/solo_stream_l1.log");
-    }
-}
-
-AutoMBA::~AutoMBA()
-{
-    for(int i = 0;i < NUM_TAGS; i++)
-        delete buckets[i];
 }
 
 bool
@@ -202,12 +168,12 @@ AutoMBA::handle_response(PacketPtr pkt)
             if(pkt->isRead()){
                 acc[rid][ACC_SI_READ_T]++;
                 acc[rid][ACC_UI_READ_T]++;
-                acc[NUM_CPUS][ACC_ALL_READ_T]++;
+                acc[NUM_REQS][ACC_ALL_READ_T]++;
             }
             else if(pkt->isWrite()){
                 acc[rid][ACC_SI_WRITE_T]++;
                 acc[rid][ACC_UI_WRITE_T]++;
-                acc[NUM_CPUS][ACC_ALL_WRITE_T]++;
+                acc[NUM_REQS][ACC_ALL_WRITE_T]++;
             }
             else{//[Ivy TODO] 
                 std::cout<<"other: "<< pkt->cmdString() <<std::endl;
@@ -244,7 +210,7 @@ AutoMBA::handle_response(PacketPtr pkt)
 void
 AutoMBA::count_NMC()
 {
-    for(int i=0; i < NUM_CPUS; i++){
+    for(int i=0; i < NUM_REQS; i++){
         if(!isMC[i]){
             acc[i][ACC_SI_NMC_COUNT] += curTick() - NMC_startTick[i];
             NMC_startTick[i] = curTick();
@@ -260,12 +226,10 @@ AutoMBA::operate_slowdown_pred()
     // predict slowdown for core 0 alone
     std::vector<double> slowdown_est_inputs;
 
-
     if(SHOW_ACTUAL_SLOWDOWN){
         SimpleMemobj *memobj = (SimpleMemobj *)obj;
         TimingSimpleCPU *cpu0 = (TimingSimpleCPU *)(memobj->system()->getRequestors(5)->obj);
         Counter curInst = cpu0->threadInfo[cpu0->curThread]->numInst;
-
         
         // TEST
         std::cout<<"actual: "<< lastsi_instCnt << " -> " << curInst << std::endl;
@@ -282,67 +246,46 @@ AutoMBA::operate_slowdown_pred()
         double act_sd = ((double)SAMPLING_INTERVAL/solo_interval_ticks - 1.0);
         std::cout << "actual_slowdown " << act_sd << std::endl;
 
-
         //[Ivy TODO] for now, we use actual slowdown instead of predicted
         slowdown_vec.push_back(act_sd);
 
     }
+    else{//[Ivy TODO] for now, 
+        slowdown_vec.push_back(0.09);
+    }
 
-
-    // int predicted_slowdown = estimator.estimate(&slowdown_est_inputs);
-    // slowdown_vec.push_back(predicted_slowdown);
-    // if (SHOW_PREDICTED_SLOWDOWN)
-    //     std::cout << "predicted[" << 0 << "] " << predicted_slowdown << std::endl;
-
-
-
-    //! static 
     /*
-    static bool has_init[NUM_CPUS] = {false};
-    static uint64_t last_solo_cycle[NUM_CPUS];
-    for (int i = 0; i < NUM_CPUS; i++) {
+    // slowdown_pred for core 0 alone
+    for(int i = 3; i <= 6; i++) {
         std::vector<double> slowdown_est_inputs;
-        //如果至少有一条 已经返回的read
-        if (acc[i][ACC_SI_READ_T]) {
-            // [TODO] 100000 
-            slowdown_est_inputs.push_back((double)(100000 - acc[i][ACC_SI_NMC_COUNT]) / acc[i][ACC_SI_READ_T]);
+        // add read
+        if (acc[i][ACC_SI_READ_T]) { // if there is a read returned
+            slowdown_est_inputs.push_back((double)(SAMPLING_INTERVAL - acc[i][ACC_SI_NMC_COUNT]) / acc[i][ACC_SI_READ_T]);
         }
         else {
             slowdown_est_inputs.push_back(0.0);
         }
-        
+
+        // add write
         slowdown_est_inputs.push_back(acc[i][ACC_SI_WRITE_T]);
-        if (acc[i][ACC_SI_LATENCY_MODEL] > 0) {
+
+        // add latency increment
+        if(acc[i][ACC_SI_LATENCY_MODEL] > 0){
             double lats = (double)acc[i][ACC_SI_LATENCY] / acc[i][ACC_SI_LATENCY_MODEL];
             slowdown_est_inputs.push_back(lats);
-        }
-        else {
+        }else{
             slowdown_est_inputs.push_back(1);
         }
+
+        // add NMC
         slowdown_est_inputs.push_back(acc[i][ACC_SI_NMC_COUNT]);
-        
-        // if (SHOW_ACTUAL_SLOWDOWN) {
-        //     if (!has_init[i]) {
-        //         cr[i]->get(&last_solo_cycle[i], 0);
-        //         has_init[i] = true;
-        //     }
-        //     uint64_t curr_instr = ooo_cpu[i].num_retired, curr_solo_cycle;
-        //     cr[i]->get(&curr_solo_cycle, curr_instr);
-        //     // 见git的README - 关键设计要点
-        //     double actual_slowdown = ((double)sampling_interval / (curr_solo_cycle - last_solo_cycle[i])) - 1;
-        //     std::cout << "actual_slowdown[" << i << "] ";
-        //     for (auto x : slowdown_est_inputs) {
-        //         std::cout << x << " ";
-        //     }
-        //     std::cout << actual_slowdown << std::endl;
-        //     last_solo_cycle[i] = curr_solo_cycle;
-        // }
-        
+
+        // give a sd_pred result of 0~20
         int predicted_slowdown = estimator.estimate(&slowdown_est_inputs);
-        slowdown_vec[i].push_back(predicted_slowdown);
-        if (SHOW_PREDICTED_SLOWDOWN)
-            std::cout << "predicted[" << i << "] " << predicted_slowdown << std::endl;
-    }*/
+        slowdown_vec.push_back(predicted_slowdown);
+    }
+
+    */
 }
 
 
@@ -354,13 +297,14 @@ AutoMBA::update_token_bucket()
         // we have not implemented other policies
         return;
     }else{
+        printf("CRISTINA\n");
         //we just take core 0 as QoS()
         assert(slowdown_vec.size()>2);
         double max_sd = *(std::max_element(slowdown_vec.begin(),slowdown_vec.end()));
         double min_sd = *(std::min_element(slowdown_vec.begin(),slowdown_vec.end()));
         double sum_sd = std::accumulate(slowdown_vec.begin(),slowdown_vec.end(), 0.0);
 
-        double avg_sd = (sum_sd - max_sd - min_sd) / (slowdown_vec.size() - 2);
+        double avg_sd = (double)(sum_sd - max_sd - min_sd) / (slowdown_vec.size() - 2);
         int tokens_inc = 0;
         std::cout << "average actual_slowdown: "<< avg_sd << std::endl;
         if(avg_sd > 0.3)

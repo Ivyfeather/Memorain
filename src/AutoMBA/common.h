@@ -24,9 +24,19 @@
 
 #define AUTOMBA_ENABLE
 
-#define NUM_CPUS (3 + 8*4)
+#define NUM_CPUS 8
+#define NUM_REQS (3 + NUM_CPUS*4) // number of requestors
 #define SAMPLING_INTERVAL 50000000 
 #define UPDATING_INTERVAL 250000000
 
+#define SOLO_TRACE_PATH "/home/chenxi/Memorain/result/solo_stream_l2.log"
+
 // gem5 Global frequency set at 1000000000000 ticks per second
+
+// To print memory access log, use --debug-flag=SimpleMemobj 
+// To record solo trace, use --debug-flag=SoloTrace
+
 #endif
+// 1cycle~500Tick
+// 10w~5000w
+// 300~15w
