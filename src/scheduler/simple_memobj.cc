@@ -227,13 +227,14 @@ SimpleMemobj::processEvent_si()
     // TimingSimpleCPU *cpu0 = (TimingSimpleCPU *)(system()->getRequestors(5)->obj);
     // printf("cpu0 inst: %lld\n", cpu0->threadInfo[cpu0->curThread]->numInst );
 
-    // when reaching Updating Interval
+    // UPDATING INTERVAL
     if(times_si <= 1){
         DPRINTF(SimpleMemobj, "test: Updating!\n");      
 #ifdef PRINT_AUTOMBA
         PRINT_RESET(ui);
 #endif
-        // automba->update_token_bucket();
+        printf("SHIINA\n");
+        automba->update_token_bucket();
         times_si = UPDATING_INTERVAL / SAMPLING_INTERVAL;
     }
     else{
@@ -273,7 +274,7 @@ SimpleMemobj::startup()
     schedule(event_si, latency_si);
     schedule(event_tb, latency_tb);
 
-    // check access for CPU
+    // check whether memobj can get CPU info
     // for(int i=0;i<system()->maxRequestors();i++){
     //     printf("addr simobject %d: %p\n",i,system()->getRequestors(i)->obj);
     // }
