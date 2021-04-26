@@ -26,31 +26,36 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "learning_gem5/part2/simple_memobj.hh"
+#include "scheduler/simple_memobj.hh"
 
 #include "base/trace.hh"
+#include "common.hh"
+#include "cpu/simple/timing.hh"
+#include "cpu/simple/exec_context.hh"
+#include "debug/MemLog.hh"
 #include "debug/SimpleMemobj.hh"
 #include "mem/packet_access.hh"
 #include "sim/system.hh"
-#include "AutoMBA/automba.h"
-#include "cpu/simple/timing.hh"
-#include "cpu/simple/exec_context.hh"
+#include "scheduler/scheduler.hh"
 
 SimpleMemobj::SimpleMemobj(SimpleMemobjParams *params) :
     SimObject(params),
     cpuPort(params->name + ".cpu_side", this),
     memPort(params->name + ".mem_side", this),
     blocked(false), _system(NULL),
-    automba(new AutoMBA((void *)this)),
+    scheduler(new Scheduler((void *)this, params->num_cpus, 
+        params->num_tags, params->core_tags)),
     event_si([this]{processEvent_si();}, name()),
     event_tb([this]{processEvent_tb();}, name()),
     latency_si(SAMPLING_INTERVAL),
     latency_tb(500000),//[Ivy TODO]
-    times_si(0)
+    times_si(0),
+    num_cpus(params->num_cpus),
+    num_tags(params->num_tags)
 {
 }
 
-// ~ delete AutoMBA
+// ~ delete scheduler
 
 Port &
 SimpleMemobj::getPort(const std::string &if_name, PortID idx)
@@ -147,12 +152,12 @@ bool
 SimpleMemobj::handleRequest(PacketPtr pkt)
 {
     
-    DPRINTF(SimpleMemobj, "Got request  for addr %#x\t from %s,\t cmd %s,\t attr %s%s%s\n",\
+    DPRINTF(MemLog, "Got request  for addr %#x\t from %s,\t cmd %s,\t attr %s%s%s\n",\
      pkt->getAddr(), system()->getRequestorName(pkt->req->requestorId()), pkt->cmdString(), \
      pkt->isRead()? "READ ":"", pkt->isWrite()?"WRITE ":"", pkt->isResponse()?"RESP":"");
 
     // if there are enough tokens, send req to memctrl
-    if(automba->handle_request(pkt)){
+    if(scheduler->handle_request(pkt)){
         return memPort.sendPacket(pkt);
     }
     // if not, req has been added to waiting queue, so we return true, 
@@ -166,12 +171,12 @@ bool
 SimpleMemobj::handleResponse(PacketPtr pkt)
 {
     
-    DPRINTF(SimpleMemobj, "Got response for addr %#x\t from %s,\t cmd %s,\t attr %s%s%s\n",\
+    DPRINTF(MemLog, "Got response for addr %#x\t from %s,\t cmd %s,\t attr %s%s%s\n",\
      pkt->getAddr(), system()->getRequestorName(pkt->req->requestorId()), pkt->cmdString(), \
      pkt->isRead()? "READ ":"", pkt->isWrite()?"WRITE ":"", pkt->isResponse()?"RESP":"");    
 
     if(cpuPort.sendPacket(pkt)){
-        automba->handle_response(pkt);
+        scheduler->handle_response(pkt);
         return true;
     }
     else{
@@ -206,22 +211,18 @@ SimpleMemobjParams::create()
     return new SimpleMemobj(this);
 }
 
-#define PRINT_AUTOMBA
-
 void
 SimpleMemobj::processEvent_si()
 {
 #define PRINT_RESET(ACC)\
- automba->print_##ACC##_accumulators();\
- automba->reset_##ACC##_accumulators();
+ scheduler->print_##ACC##_accumulators();\
+ scheduler->reset_##ACC##_accumulators();
     // slowdown predict
-    automba->operate_slowdown_pred();
+    scheduler->operate_slowdown_pred();
 
-#ifdef PRINT_AUTOMBA
     // print accumulators
     PRINT_RESET(si);
-    automba->print_tb_parameters();
-#endif
+    scheduler->print_tb_parameters();
 
     // [TEST] print cpu0 inst
     // TimingSimpleCPU *cpu0 = (TimingSimpleCPU *)(system()->getRequestors(5)->obj);
@@ -230,11 +231,8 @@ SimpleMemobj::processEvent_si()
     // UPDATING INTERVAL
     if(times_si <= 1){
         DPRINTF(SimpleMemobj, "test: Updating!\n");      
-#ifdef PRINT_AUTOMBA
         PRINT_RESET(ui);
-#endif
-        printf("SHIINA\n");
-        automba->update_token_bucket();
+        scheduler->update_token_bucket();
         times_si = UPDATING_INTERVAL / SAMPLING_INTERVAL;
     }
     else{
@@ -248,17 +246,18 @@ void
 SimpleMemobj::processEvent_tb()
 {
     DPRINTF(SimpleMemobj, "Adding tokens\n");
-    //[Ivy TODO]core 0
-    automba->bucket(0)->add_tokens();
+    for(int i=0; i<=num_tags; i++){
+        scheduler->bucket(i)->add_tokens();
+    }
     PacketPtr pkt = NULL;
 
     //////!!!!!!
-    while((pkt = automba->get_waiting_req())){
+    while((pkt = scheduler->get_waiting_req())){
         memPort.sendPacket(pkt);
     }
 
     cpuPort.trySendRetry();
-    schedule(event_tb, curTick() + automba->bucket(0)->get_freq());
+    schedule(event_tb, curTick() + scheduler->bucket(0)->freq);
 }
 
 void
@@ -269,7 +268,7 @@ SimpleMemobj::startup()
     times_si = UPDATING_INTERVAL / SAMPLING_INTERVAL;
     for(int i = 0; i < system()->maxRequestors(); i++){
         printf("Requestor %d : Name %s, tag %d\n",\
-         i, system()->getRequestorName(i).c_str(), automba->get_core_tags(i));
+         i, system()->getRequestorName(i).c_str(), scheduler->get_core_tags(CORE(i)));
     }
     schedule(event_si, latency_si);
     schedule(event_tb, latency_tb);

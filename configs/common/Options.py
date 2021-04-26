@@ -115,7 +115,10 @@ def addNoISAOptions(parser):
                        help="Enable low-power states in DRAMInterface")
     parser.add_option("--mem-channels-intlv", type="int", default=0,
                       help="Memory channels interleave")
+
+    # [Ivy] add options
     parser.add_option("--use_memobj", action="store_true")
+    parser.add_option("--core_tags",type="string", default="1")
 
     parser.add_option("--memchecker", action="store_true")
 

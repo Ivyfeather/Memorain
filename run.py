@@ -27,6 +27,7 @@ def add_options(parser):
     parser.add_argument("--l2cache",action='store_true')
     parser.add_argument("-R",action='store_true',help="Redirect output to file")
     parser.add_argument("-M","--memobj",action='store_true',help="use memobj")
+    parser.add_argument("-T","--core_tags",type=str)
 
 def get_workloads(wkld_str):
     wklds = []
@@ -57,6 +58,10 @@ if __name__ == "__main__":
     # no ISA
     if args.num_cpus != 1:
         options.append('--num-cpus={}'.format(args.num_cpus))
+
+    if args.core_tags:
+        assert(args.num_cpus == len(args.core_tags.split(",")))
+        options.append("--core_tags=" + args.core_tags)
 
     if args.dramsim:
         options.append('--mem-type=DRAMsim3')

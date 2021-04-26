@@ -283,6 +283,8 @@ def config_mem(options, system):
                 print("***ADD SimpleMemobj*** MemConfig.py:281 {}".format(i))
                 subsystem.memobj = SimpleMemobj()
                 subsystem.memobj.num_cpus = options.num_cpus
+                subsystem.memobj.core_tags = options.core_tags
+                subsystem.memobj.num_tags = max([int(x) for x in options.core_tags.split(",")])
                 subsystem.mem_ctrls[i].port = subsystem.memobj.mem_side
 
                 xbar.master = subsystem.memobj.cpu_side

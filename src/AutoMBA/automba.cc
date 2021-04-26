@@ -139,6 +139,7 @@ AutoMBA::handle_request(PacketPtr pkt)
         return true;
     }
     else{
+        
         // if false, add req to waiting queue 
         buckets[pkt_tag]->add_request(lreq, false);
         return false;

@@ -30,5 +30,8 @@ Import('*')
 SimObject('SimpleMemobj.py')
 
 Source('simple_memobj.cc')
+Source('scheduler.cc')
+Source('token_bucket.cc')
 
 DebugFlag('SimpleMemobj', "For controlling memory access")
+DebugFlag('MemLog', "Print memory access log")

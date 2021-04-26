@@ -30,9 +30,11 @@ from m5.SimObject import SimObject
 
 class SimpleMemobj(SimObject):
     type = 'SimpleMemobj'
-    cxx_header = "learning_gem5/part2/simple_memobj.hh"
+    cxx_header = "scheduler/simple_memobj.hh"
 
     cpu_side = ResponsePort("CPU side port, receives requests")
     mem_side = RequestPort("Memory side port, sends requests")
 
     num_cpus = Param.Int(1, "number of cpus")
+    num_tags = Param.Int(2, "number of tags")
+    core_tags = VectorParam.Int([1], "label for each core")
