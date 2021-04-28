@@ -28,6 +28,13 @@ private:
 
     int num_cpus = 1;
 
+    /// memory access control policy
+    enum class Policy {
+        CORE0_T,
+        ALL
+    };    
+    Policy policy = Policy::CORE0_T;
+
     enum {
         ACC_SI_READ_T,
         ACC_SI_WRITE_T,
@@ -51,7 +58,7 @@ public:
         info = new CpuInfo[num_cpus+1];
         // init trace_file path
         for(auto it = paths.begin(); it!= paths.end(); it++){
-            LOG(DEBUG, "%s", (*it));
+            LOG(DEBUG, "%s", (*it).c_str());
         }
 
         for(int i=1; i<=num_cpus; i++){

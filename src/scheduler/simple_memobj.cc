@@ -152,9 +152,9 @@ bool
 SimpleMemobj::handleRequest(PacketPtr pkt)
 {
     
-    DPRINTF(MemLog, "Got request  for addr %#x\t from %s,\t cmd %s,\t attr %s%s%s\n",\
-     pkt->getAddr(), system()->getRequestorName(pkt->req->requestorId()), pkt->cmdString(), \
-     pkt->isRead()? "READ ":"", pkt->isWrite()?"WRITE ":"", pkt->isResponse()?"RESP":"");
+    DPRINTF(MemLog, "Got request for Vaddr %#x\t Paddr %#x\t from %s,\t cmd %s,\t attr %s%s%s\n",\
+     pkt->getAddr(), pkt->req->getPaddr(), system()->getRequestorName(pkt->req->requestorId()), \ 
+     pkt->cmdString(), pkt->isRead()? "READ ":"", pkt->isWrite()?"WRITE ":"", pkt->isResponse()?"RESP":"");
 
     // if there are enough tokens, send req to memctrl
     if(scheduler->handle_request(pkt)){
@@ -171,9 +171,9 @@ bool
 SimpleMemobj::handleResponse(PacketPtr pkt)
 {
     
-    DPRINTF(MemLog, "Got response for addr %#x\t from %s,\t cmd %s,\t attr %s%s%s\n",\
-     pkt->getAddr(), system()->getRequestorName(pkt->req->requestorId()), pkt->cmdString(), \
-     pkt->isRead()? "READ ":"", pkt->isWrite()?"WRITE ":"", pkt->isResponse()?"RESP":"");    
+    DPRINTF(MemLog, "Got response for Vaddr %#x\t Paddr %#x\t from %s,\t cmd %s,\t attr %s%s%s\n",\
+     pkt->getAddr(), pkt->req->getPaddr(), system()->getRequestorName(pkt->req->requestorId()), \ 
+     pkt->cmdString(), pkt->isRead()? "READ ":"", pkt->isWrite()?"WRITE ":"", pkt->isResponse()?"RESP":"");
 
     if(cpuPort.sendPacket(pkt)){
         scheduler->handle_response(pkt);

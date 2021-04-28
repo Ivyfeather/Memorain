@@ -200,7 +200,7 @@ Scheduler::operate_slowdown_pred(){
         Counter cur_instcnt = cpui->threadInfo[cpui->curThread]->numInst;
 
         // TEST OUTPUT
-        std::cout<<"inst cnt: "<< info[i].last_instcnt << " -> " << cur_instcnt << std::endl;
+        LOG(DEBUG, "cpu %d inst: %lld -> %lld", i, info[i].last_instcnt, cur_instcnt);
 
         /// count slowdown
         // same #inst, (mix_time/solo_time) - 1 is slowdown
@@ -229,6 +229,63 @@ Scheduler::operate_slowdown_pred(){
 /// update token bucket params every updating interval
 void
 Scheduler::update_token_bucket(){
+    // calculate average slowdown in the ui
+    std::vector<double> avg_sd;
+    avg_sd.push_back(0.0);
+    for(int i=1; i <=num_cpus; i++){
+        assert(info[i].slowdown_vec.size()>2);
+        double max_sd = *(std::max_element(info[i].slowdown_vec.begin(),info[i].slowdown_vec.end()));
+        double min_sd = *(std::min_element(info[i].slowdown_vec.begin(),info[i].slowdown_vec.end()));
+        double sum_sd = std::accumulate(info[i].slowdown_vec.begin(),info[i].slowdown_vec.end(), 0.0);
+        double avg = (double)(sum_sd - max_sd - min_sd) / (info[i].slowdown_vec.size() - 2);
+
+#ifdef PRINT_SLOWDOWN
+        std::cout << "cpu " << i << " sd: " << avg << std::endl;
+#endif
+        avg_sd.push_back(avg);
+        info[i].slowdown_vec.clear();
+    }
+
+    if(policy == Policy::CORE0_T){
+
+        //[Ivy TODO]
+
+        int tokens_inc = 0;
+        if(avg_sd[1] > 0.3)
+        {
+            //[Ivy TODO]
+            uint64_t bandwidth = info[1].acc[ACC_UI_READ_T] + info[1].acc[ACC_UI_WRITE_T];
+            int tmp_inc_diff = (num_cpus - 1) * (avg_sd[1] - 0.1) * bandwidth * buckets[1]->freq / UPDATING_INTERVAL;
+            tmp_inc_diff = std::min(buckets[0]->inc - 1, tmp_inc_diff);
+            tokens_inc -= std::max(buckets[0]->inc / 2, tmp_inc_diff);
+            std::cout << "tmp_inc " << tmp_inc_diff << " " << buckets[0]->inc << std::endl;
+        }
+        else if(avg_sd[1] > 0.1)
+        {
+            tokens_inc = -((avg_sd[1] - 0.1) / 0.05 + 1) * (num_cpus - 1);
+        }
+        else if(avg_sd[1] <= 0.08)
+        {
+            tokens_inc = num_cpus - 1;
+        }
+        buckets[0]->set_inc(buckets[0]->inc + tokens_inc);
+    
+
+
+
+
+
+
+
+
+
+
+
+
+    }
+    else if(policy == Policy::ALL){
+        return;
+    }
 }
 
 
