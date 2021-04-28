@@ -176,6 +176,55 @@ Scheduler::handle_response(PacketPtr pkt){
     assert(found && "No matching request found in pending list");
 }
 
+/// for counting NMC at the end of every sampling interval
+void
+Scheduler::count_NMC()
+{
+    for(int i=0; i <= num_cpus; i++){
+        if(!info[i].isMC){
+            info[i].acc[ACC_SI_NMC_COUNT] += curTick() - info[i].NMC_startTick;
+            info[i].NMC_startTick = curTick();
+        }
+    }
+}
+
+/// operate slowdown pred (every sampling interval)
+void
+Scheduler::operate_slowdown_pred(){
+    count_NMC();
+#ifdef SLOWDOWN_PRED
+    // pass info[0] [Ivy TODO]
+    for(int i=1; i<=num_cpus; i++){
+        SimpleMemobj *memobj = (SimpleMemobj *)obj;
+        TimingSimpleCPU *cpui = (TimingSimpleCPU *)(memobj->system()->getRequestors(4*i+1)->obj);
+        Counter cur_instcnt = cpui->threadInfo[cpui->curThread]->numInst;
+
+        // TEST OUTPUT
+        std::cout<<"inst cnt: "<< info[i].last_instcnt << " -> " << cur_instcnt << std::endl;
+
+        /// count slowdown
+        // same #inst, (mix_time/solo_time) - 1 is slowdown
+        //____________________________________________________________
+        //      |      ticks            |   insts
+        //______|_______________________|_____________________________
+        // solo | cr->Interval_Ticks()  | cur_instcnt - last_instcnt
+        // mix  | SAMPLING INTERVAL     | same as above
+        //______|_______________________|_____________________________
+        
+        uint64_t solo_interval_ticks = info[i].cr->Interval_Ticks(cur_instcnt);
+        info[i].last_instcnt = cur_instcnt;
+        double act_sd = ((double)SAMPLING_INTERVAL/solo_interval_ticks - 1.0);
+
+        //[Ivy TODO] we use actual slowdown instead of predicted slowdown
+        info[i].slowdown_vec.push_back(act_sd);
+    }
+#else
+    for(int i=1; i<=num_cpus; i++){
+        info[i].slowdown_vec.push_back(0.09);
+    }
+#endif
+
+}
 
 /// update token bucket params every updating interval
 void
@@ -183,10 +232,9 @@ Scheduler::update_token_bucket(){
 }
 
 
-/// operate slowdown pred (every sampling interval)
-void
-Scheduler::operate_slowdown_pred(){
-}
+
+
+
 
 
 /// get a waiting req from token buckets for memobj to send

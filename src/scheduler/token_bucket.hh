@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "info.hh"
+#include "info.hh"
 #include "mem/packet.hh"
 #include "mem/request.hh"
 
@@ -18,6 +19,9 @@ public:
 
     /// used to store reqs not yet sent to mem_ctrl
     std::queue<LabeledReq *> waiting_queue;
+
+    /// point to cpuinfos
+    CpuInfo *cpus = NULL;
 
     ///--------------------------------------------
     TokenBucket(int s, int f, int i, bool b) : 
@@ -43,6 +47,9 @@ public:
     /// else return false; 
     /// used when a req arrives memobj
     bool test_and_get();
+
+    /// used to reorder reqs in waiting queue
+    void reorder_reqs();
 
     // 1 <= inc <= size
     inline void set_inc(int i) { inc = std::min(std::max(1, i), size); }

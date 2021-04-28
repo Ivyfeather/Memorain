@@ -39,3 +39,8 @@ bool TokenBucket::test_and_get(){
     }
     return false;
 }
+
+void TokenBucket::reorder_reqs(){
+    
+
+}
