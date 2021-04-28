@@ -6,6 +6,15 @@
 #include "mem/packet.hh"
 #include "mem/request.hh"
 
+typedef struct {
+    uint64_t addr;
+    uint8_t channel;
+    uint8_t rank;
+    uint8_t bank;
+    uint8_t column;
+    uint16_t row;
+}AddrPartion;
+
 class LabeledReq {
 public:
     /// pointer to packet of gem5
@@ -54,14 +63,14 @@ public:
     CycleRecorder *cr = NULL;
 
     /// inst at the end of last sampling interval
-    int64_t cur_inst = 0;
+    int64_t last_instcnt = 0;
 
     /// for counting NMC  
     bool isMC = false;
     uint64_t NMC_startTick = 0; 
 
     /// process slowdown
-    double slowdown_vec;
+    std::vector<double> slowdown_vec;
 
     /// accumulators
     enum {
