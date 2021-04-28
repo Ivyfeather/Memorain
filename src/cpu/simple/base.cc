@@ -169,7 +169,7 @@ BaseSimpleCPU::countInst()
 
         system->totalNumInsts++;
         t_info.thread->funcExeInst++;
-        DPRINTF(SoloTrace,"inst cnt %llu\n", t_info.numInst);
+        DPRINTF(SoloTrace,"inst cnt %llu\n", t_info.numInst);//[Ivy]
     }
     t_info.numOp++;
     t_info.numOps++;

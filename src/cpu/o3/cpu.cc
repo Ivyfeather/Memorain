@@ -55,6 +55,7 @@
 #include "debug/Drain.hh"
 #include "debug/O3CPU.hh"
 #include "debug/Quiesce.hh"
+#include "debug/SoloTrace.hh"
 #include "enums/MemoryMode.hh"
 #include "sim/core.hh"
 #include "sim/full_system.hh"
@@ -1515,6 +1516,8 @@ FullO3CPU<Impl>::instDone(ThreadID tid, const DynInstPtr &inst)
         thread[tid]->threadStats.numInsts++;
         committedInsts[tid]++;
         system->totalNumInsts++;
+        //[Ivy]
+        DPRINTF(SoloTrace,"inst cnt %llu\n", thread[tid]->numInst);
 
         // Check for instruction-count-based events.
         thread[tid]->comInstEventQueue.serviceEvents(thread[tid]->numInst);
