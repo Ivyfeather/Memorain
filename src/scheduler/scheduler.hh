@@ -16,6 +16,11 @@ private:
     TokenBucket **buckets;
 
     /// CPU info 
+    /* Beaware: 
+        info[0] is for func
+        cpu_i is at CpuInfo[i+1]
+        when enumerating, use "for(int i=0; i<=num_cpus; i++)"
+    */
     CpuInfo *info;
 
     /// Used for printing system-related info [Ivy]
@@ -35,18 +40,23 @@ private:
     };
 
 public:
-    Scheduler(void *memobj, int num_cpu, int num_tag, std::vector<int>& core_tags) :
+    Scheduler(void *memobj, int num_cpu, int num_tag,
+     std::vector<int>& core_tags, std::vector<std::string>& paths) :
         num_tags(num_tag),
         obj(memobj),
         num_cpus(num_cpu)   
     { 
         printf("check params #cpu:%d #tag:%d\n", num_cpu, num_tag);
         // ----- init every cpuinfo -----
-        // cpu i is at CpuInfo[i+1]
         info = new CpuInfo[num_cpus+1];
         for(int i=1; i<=num_cpus; i++){
             printf("CRISTINA TAG %d\n",core_tags[i-1]);
             info[i].tag = core_tags[i-1];
+
+            // init trace_file path
+            for(auto it = paths.begin(); it!= paths.end(); it++){
+                std::cout << (*it) << std::endl;
+            }
         }
 
         // ----- init token buckets -----
@@ -58,7 +68,8 @@ public:
                 if(info[j].tag == i) cnt_tagi++;
             }
 #ifdef CONTROLL_ENABLE
-            buckets[i] = new TokenBucket(cnt_tagi*init_size, init_freq, cnt_tagi*init_inc, (i==1));    
+            buckets[i] = new TokenBucket(cnt_tagi*init_size, init_freq, cnt_tagi*init_inc, (i==1));   
+            buckets[i]->cpus = info;
 #else
             buckets[i] = new TokenBucket(cnt_tagi*init_size, init_freq, cnt_tagi*init_inc, true);    
 #endif
@@ -94,6 +105,7 @@ public:
     /// get a waiting req from token buckets for memobj to send
     PacketPtr get_waiting_req();
 
+    void count_NMC();
 
     TokenBucket *bucket(int i){ 
         assert(i <= num_tags);
@@ -104,7 +116,6 @@ public:
         assert(i <= num_cpus);
         return info[i].tag;
     }
-
 
 };
 

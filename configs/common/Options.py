@@ -119,6 +119,7 @@ def addNoISAOptions(parser):
     # [Ivy] add options
     parser.add_option("--use_memobj", action="store_true")
     parser.add_option("--core_tags",type="string", default="1")
+    parser.add_option("--paths",type="string", default="")
 
     parser.add_option("--memchecker", action="store_true")
 

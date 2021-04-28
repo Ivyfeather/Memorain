@@ -44,7 +44,7 @@ SimpleMemobj::SimpleMemobj(SimpleMemobjParams *params) :
     memPort(params->name + ".mem_side", this),
     blocked(false), _system(NULL),
     scheduler(new Scheduler((void *)this, params->num_cpus, 
-        params->num_tags, params->core_tags)),
+        params->num_tags, params->core_tags, params->paths)),
     event_si([this]{processEvent_si();}, name()),
     event_tb([this]{processEvent_tb();}, name()),
     latency_si(SAMPLING_INTERVAL),

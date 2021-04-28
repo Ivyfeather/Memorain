@@ -38,3 +38,4 @@ class SimpleMemobj(SimObject):
     num_cpus = Param.Int(1, "number of cpus")
     num_tags = Param.Int(2, "number of tags")
     core_tags = VectorParam.Int([1], "label for each core")
+    paths = VectorParam.String([],"input a series of file")

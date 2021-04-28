@@ -285,6 +285,7 @@ def config_mem(options, system):
                 subsystem.memobj.num_cpus = options.num_cpus
                 subsystem.memobj.core_tags = options.core_tags
                 subsystem.memobj.num_tags = max([int(x) for x in options.core_tags.split(",")])
+                subsystem.memobj.paths = options.paths
                 subsystem.mem_ctrls[i].port = subsystem.memobj.mem_side
 
                 xbar.master = subsystem.memobj.cpu_side
