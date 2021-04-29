@@ -14,33 +14,45 @@ wkld_set = {
     "stream":"tests/test-progs/stream/stream_c.exe"
     }
 
+tracefile_set = {
+    "hello":"result/trace/o3cpu_hello.log",
+    "stream":"result/trace/o3cpu_stream.log"
+    
+}
+
 def add_options(parser):
     parser.add_argument('--dramsim', action='store_true',
-                        help='Use DRAMsim3')
+                        default=True, help='Use DRAMsim3')
     parser.add_argument('--caches', action='store_true',
-                        help='Use L1 and L2 cache')
+                        default=True, help='Use L1 Cache')
     parser.add_argument("-n", "--num-cpus", type=int, default=1)
     parser.add_argument("-w","--workload",type=str)
     parser.add_argument("--cpu-type",type=str)
     parser.add_argument("--debug-flag",type=str)
     parser.add_argument("--other",type=str)
-    parser.add_argument("--l2cache",action='store_true')
+    parser.add_argument("--l2cache", action='store_true', default=True)
     parser.add_argument("-R",action='store_true',help="Redirect output to file")
-    parser.add_argument("-M","--memobj",action='store_true',help="use memobj")
+    parser.add_argument("-M","--use_memobj",action='store_true',help="use memobj")
     parser.add_argument("-T","--core_tags",type=str)
+    # parser.add_argument("-P","--paths",type=str)
 
-def get_workloads(wkld_str):
-    wklds = []
-    wkld_split = wkld_str.split("-")
-    for i, name in enumerate(wkld_split):
+def get_names(input):
+    names = []
+    input_split = input.split("-")
+    hasdigit = False
+    for i, item in enumerate(input_split):
         # like 4-hello, means hello-hello-hello-hello
-        if(name.isdigit()):
-            wkld = wkld_split[i+1]
-            for cnt in range(int(name)):
-                wklds.append(wkld_set[wkld])
+        if(item.isdigit()):
+            name = input_split[i+1]
+            names.extend([name for x in range(int(item))])
+            hasdigit = True
+        # pass hello in 4-'hello'
+        elif(hasdigit):
+            hasdigit = False
         else:
-            wklds.append(wkld_set[name])
-    return wklds
+            names.append(item)
+    return names
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -57,10 +69,11 @@ if __name__ == "__main__":
 # options for se.py, following the order in Options.py
     # no ISA
     if args.num_cpus != 1:
+        assert args.core_tags, "must assign tags when more than one cpus"
         options.append('--num-cpus={}'.format(args.num_cpus))
 
     if args.core_tags:
-        assert(args.num_cpus == len(args.core_tags.split(",")))
+        assert args.num_cpus == len(args.core_tags.split(","))
         options.append("--core_tags=" + args.core_tags)
 
     if args.dramsim:
@@ -74,7 +87,7 @@ if __name__ == "__main__":
     if args.l2cache:
         options.append('--l2cache')
 
-    if args.memobj:
+    if args.use_memobj:
         options.append('--use_memobj')
 
 # Common Options
@@ -83,11 +96,15 @@ if __name__ == "__main__":
 
 # SE Options
     if args.workload:
-        wklds = get_workloads(args.workload)
+        names  = get_names(args.workload)
+        wklds  = [wkld_set[name] for name in names]
+        traces = [tracefile_set[name] for name in names]
         print(wklds)
         options.append("--cmd='{}'".format(";".join(wklds)))
+        options.append("--paths='{}'".format(",".join(traces)))
     else:
         options.append('--cmd={}'.format(wkld_set["hello"]))
+        options.append('--paths={}'.format(tracefile_set["hello"]))
 
     if args.other:
         options.append(args.other)

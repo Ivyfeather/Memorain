@@ -24,7 +24,7 @@ public:
         int64_t instcnt;
         uint64_t cur_insttick, interval_ticks;
         bool found = false;
-        while(fscanf(fp, "%lu: system.cpu: inst cnt %ld\n", &cur_insttick, &instcnt)!=-1){
+        while(fscanf(fp, "%lu: %ld\n", &cur_insttick, &instcnt)!=-1){
             if(instcnt == new_inst){
                 interval_ticks = cur_insttick - last_insttick;
                 last_insttick = cur_insttick;

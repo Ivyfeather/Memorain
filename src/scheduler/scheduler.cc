@@ -1,6 +1,8 @@
 #include "scheduler.hh"
 #include "simple_memobj.hh"
 #include "cpu/simple/timing.hh"
+#include "cpu/o3/cpu.hh"
+#include "cpu/o3/deriv.hh"
 
 /* util func */
 /// get requestor ID of a packet
@@ -101,7 +103,7 @@ Scheduler::handle_request(PacketPtr pkt){
     }
 
     // Put req into pending queue
-    LabeledReq *lreq = new LabeledReq(pkt, curTick());
+    LabeledReq *lreq = new LabeledReq(pkt, curTick(), pkt->req->getPaddr());
     cpu->pending_req.push_back(lreq);
 
     // for counting NMC
@@ -196,11 +198,16 @@ Scheduler::operate_slowdown_pred(){
     // pass info[0] [Ivy TODO]
     for(int i=1; i<=num_cpus; i++){
         SimpleMemobj *memobj = (SimpleMemobj *)obj;
-        TimingSimpleCPU *cpui = (TimingSimpleCPU *)(memobj->system()->getRequestors(4*i+1)->obj);
-        Counter cur_instcnt = cpui->threadInfo[cpui->curThread]->numInst;
+        /// for timing simple CPU
+        // TimingSimpleCPU *cpui = (TimingSimpleCPU *)(memobj->system()->getRequestors(4*i+1)->obj);
+        // Counter cur_instcnt = cpui->threadInfo[cpui->curThread]->numInst;
+        /// for O3 CPU
+        DerivO3CPU *cpui = (DerivO3CPU *)(memobj->system()->getRequestors(4*i+1)->obj);
+        uint64_t cur_instcnt = cpui->thread[0]->numInst; 
+
 
         // TEST OUTPUT
-        LOG(DEBUG, "cpu %d inst: %lld -> %lld", i, info[i].last_instcnt, cur_instcnt);
+        LOG(DEBUG, "cpu %d inst: %ld -> %lu", i, info[i].last_instcnt, cur_instcnt);
 
         /// count slowdown
         // same #inst, (mix_time/solo_time) - 1 is slowdown

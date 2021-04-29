@@ -1517,7 +1517,8 @@ FullO3CPU<Impl>::instDone(ThreadID tid, const DynInstPtr &inst)
         committedInsts[tid]++;
         system->totalNumInsts++;
         //[Ivy]
-        DPRINTF(SoloTrace,"inst cnt %llu\n", thread[tid]->numInst);
+        // DPRINTF(SoloTrace,"inst cnt %llu %d\n", thread[tid]->numInst, tid);
+        DPRINTF(SoloTrace,"inst %llu\n", thread[tid]->numInst);
 
         // Check for instruction-count-based events.
         thread[tid]->comInstEventQueue.serviceEvents(thread[tid]->numInst);

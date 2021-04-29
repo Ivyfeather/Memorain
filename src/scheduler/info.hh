@@ -29,7 +29,13 @@
 #define BYTES_MASK      0x3f
 
 struct AddrMapping{
-    AddrMapping(uint64_t hex_addr)
+    AddrMapping(uint64_t hex_addr):
+        channel     ( (hex_addr >> CHANNEL_OFF)  & CHANNEL_MASK ),
+        rank        ( (hex_addr >> RANK_OFF)     & RANK_MASK    ),
+        bank_group  ( (hex_addr >> BANKGROUP_OFF)& BANKGROUP_MASK),
+        bank        ( (hex_addr >> BANK_OFF)     & BANK_MASK    ),
+        column      ( (hex_addr >> COLUMN_OFF)   & COLUMN_MASK  ),
+        row         ( (hex_addr >> ROW_OFF)      & ROW_MASK     )
     {}
     uint64_t addr;
     uint8_t channel;
@@ -44,9 +50,6 @@ class LabeledReq {
 public:
     /// pointer to packet of gem5
     PacketPtr pkt; 
-    
-    /// address mapping
-    // AddrMapping addr;
 
     /// timestamp
     // uint64_t time_received = 0;
@@ -54,9 +57,12 @@ public:
     uint64_t time_return = 0;
     uint64_t shadow_return = 0;
 
+    /// address mapping
+    AddrMapping addr;
+
     ///--------------------------------------------
-    LabeledReq(PacketPtr pkt, uint64_t time_received) :
-        pkt(pkt), time_sent(time_received)
+    LabeledReq(PacketPtr pkt, uint64_t time_received, uint64_t paddr) :
+        pkt(pkt), time_sent(time_received), addr(AddrMapping(paddr))
     { };
     
     std::string get_type_string() {

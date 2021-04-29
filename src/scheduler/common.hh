@@ -24,7 +24,7 @@
 #include "log.hh"
 
 #define CONTROLL_ENABLE
-// #define SLOWDOWN_PRED
+#define SLOWDOWN_PRED
 #define PRINT_SLOWDOWN
 #define PRINT_ACCUMULATORS
 #define PRINT_TB_PARAMETERS
@@ -40,7 +40,9 @@
 // gem5 Global frequency set at 1000000000000 ticks per second
 
 // To print memory access log, use --debug-flag=MemLog 
+
 // To record solo trace, use --debug-flag=SoloTrace
+//  then use traceproc.sh to compress tracefile
 
 // DRAM address mapping in "info.hh"
 

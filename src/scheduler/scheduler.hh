@@ -54,16 +54,20 @@ public:
         num_cpus(num_cpu)   
     { 
         LOG(INFO, "check params #cpu:%d #tag:%d\n", num_cpu, num_tag);
-        // ----- init every cpuinfo -----
-        info = new CpuInfo[num_cpus+1];
-        // init trace_file path
         for(auto it = paths.begin(); it!= paths.end(); it++){
             LOG(DEBUG, "%s", (*it).c_str());
         }
+        assert(num_cpu == core_tags.size());
+        assert(num_cpu == paths.size());
+
+        // ----- init every cpuinfo -----
+        info = new CpuInfo[num_cpus+1];
+        // init trace_file path
 
         for(int i=1; i<=num_cpus; i++){
             LOG(DEBUG, "CRISTINA TAG %d",core_tags[i-1]);
             info[i].tag = core_tags[i-1];
+            info[i].cr = new CycleRecorder(paths[i-1].c_str());
         }
 
         // ----- init token buckets -----
