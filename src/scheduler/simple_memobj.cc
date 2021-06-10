@@ -48,8 +48,8 @@ SimpleMemobj::SimpleMemobj(SimpleMemobjParams *params) :
     event_si([this]{processEvent_si();}, name()),
     event_tb([this]{processEvent_tb();}, name()),
     latency_si(SAMPLING_INTERVAL),
-    latency_tb(500000),//[Ivy TODO]
-    times_si(0),
+    latency_tb(10000000),//[Ivy TODO]
+    times_si(UPDATING_INTERVAL / SAMPLING_INTERVAL),
     num_cpus(params->num_cpus),
     num_tags(params->num_tags)
 {
@@ -221,18 +221,19 @@ SimpleMemobj::processEvent_si()
     scheduler->operate_slowdown_pred();
 
     // print accumulators
-    PRINT_RESET(si);
+    scheduler->print_si_accumulators();
+#ifdef CLUSTERING
+    scheduler->cluster();
+#endif
+    scheduler->reset_si_accumulators();
     scheduler->print_tb_parameters();
 
-    // [TEST] print cpu0 inst
-    // TimingSimpleCPU *cpu0 = (TimingSimpleCPU *)(system()->getRequestors(5)->obj);
-    // printf("cpu0 inst: %lld\n", cpu0->threadInfo[cpu0->curThread]->numInst );
-
-    // UPDATING INTERVAL
+    // UPDATING INTERVAL, we adjust token buckets
     if(times_si <= 1){
-        DPRINTF(SimpleMemobj, "test: Updating!\n");      
-        PRINT_RESET(ui);
+        DPRINTF(SimpleMemobj, "test: Updating!\n");     
+        scheduler->print_ui_accumulators(); 
         scheduler->update_token_bucket();
+        scheduler->reset_ui_accumulators();
         times_si = UPDATING_INTERVAL / SAMPLING_INTERVAL;
     }
     else{
@@ -248,15 +249,20 @@ SimpleMemobj::processEvent_tb()
     DPRINTF(SimpleMemobj, "Adding tokens\n");
     for(int i=0; i<=num_tags; i++){
         scheduler->bucket(i)->add_tokens();
+        ////
+        std::cout << "tbw: " << scheduler->bucket(i)->waiting_num() << std::endl;
+#ifdef TB_REORDER
+        scheduler->bucket(i)->reorder_reqs();
+#endif
     }
     PacketPtr pkt = NULL;
 
-    //////!!!!!!
+    //////!!!!!![Ivy TODO]
     while((pkt = scheduler->get_waiting_req())){
         memPort.sendPacket(pkt);
     }
-
-    cpuPort.trySendRetry();
+    //////!!!!!![Ivy TODO]
+    // cpuPort.trySendRetry();
     schedule(event_tb, curTick() + scheduler->bucket(0)->freq);
 }
 

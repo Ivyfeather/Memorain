@@ -14,6 +14,10 @@ private:
     //// a token bucket for each tag
     int num_tags = 2;
     TokenBucket **buckets;
+    //[Ivy TODO] 
+    // WARNING: 
+    // assertion on index should be added
+    // or segmentation fault might occur
 
     /// CPU info 
     /* Beaware: 
@@ -31,7 +35,7 @@ private:
     /// memory access control policy
     enum class Policy {
         CORE0_T,
-        ALL
+        FAIR
     };    
     Policy policy = Policy::CORE0_T;
 
@@ -45,6 +49,16 @@ private:
         ACC_UI_WRITE_T,
         ACC_UI_MAX
     };
+
+    /// total number of memery reqs
+    uint64_t total_mem_si = 0, total_mem_ui = 0;
+    uint64_t prev_total_mem_ui = 0;
+
+    /// the slowdown of critical process in last ui
+    double prev_slowdown = 0;
+
+    /// id of cpu with max slowdown in previous ui 
+    int prev_slowest = 1;
 
 public:
     Scheduler(void *memobj, int num_cpu, int num_tag,
@@ -72,14 +86,14 @@ public:
 
         // ----- init token buckets -----
         buckets = new TokenBucket *[num_tags+1]; // 0 for func
-        int init_size = 60, init_freq = 10000000, init_inc = 50;
+        int init_size = 400, init_freq = 10000000, init_inc = 50;
         for(int i=0; i<=num_tags; i++){
             int cnt_tagi = 0;
             for(int j=0; j<=num_cpus; j++){
                 if(info[j].tag == i) cnt_tagi++;
             }
 #ifdef CONTROLL_ENABLE
-            buckets[i] = new TokenBucket(cnt_tagi*init_size, init_freq, cnt_tagi*init_inc, (i==1));   
+            buckets[i] = new TokenBucket(cnt_tagi*init_size, init_freq, cnt_tagi*init_inc, (i<=1));   
             buckets[i]->cpus = info;
 #else
             buckets[i] = new TokenBucket(cnt_tagi*init_size, init_freq, cnt_tagi*init_inc, true);    
@@ -112,6 +126,9 @@ public:
 
     /// operate slowdown pred (every sampling interval)
     void operate_slowdown_pred();
+
+    /// cluster processess with similar memory behavior
+    void cluster();
 
     /// get a waiting req from token buckets for memobj to send
     PacketPtr get_waiting_req();

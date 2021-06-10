@@ -1,7 +1,7 @@
 # CC = gcc
 CC = riscv64-linux-gnu-gcc
 # CFLAGS = -O2
-CFLAGS = -O2 -static -DNTIMES=2 -DSTREAM_ARRAY_SIZE=60000
+CFLAGS = -O2 -static -DNTIMES=2 -DSTREAM_ARRAY_SIZE=40000000
 
 FF = g77
 FFLAGS = -O2

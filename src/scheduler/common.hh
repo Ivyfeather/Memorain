@@ -23,14 +23,18 @@
 #include <vector>
 #include "log.hh"
 
-#define CONTROLL_ENABLE
-#define SLOWDOWN_PRED
-#define PRINT_SLOWDOWN
 #define PRINT_ACCUMULATORS
 #define PRINT_TB_PARAMETERS
+#define SLOWDOWN_PRED
+#define PRINT_SLOWDOWN
+
+#define CONTROLL_ENABLE
+#define TB_REORDER
+// #define CLUSTERING
 
 #define SAMPLING_INTERVAL 50000000 
 #define UPDATING_INTERVAL 500000000
+#define NUM_UI_SI 10
 
 // 0:wb, 1:func, 2:int;
 // 3~6: cpu0; 7~10: cpu1...
@@ -43,6 +47,10 @@
 
 // To record solo trace, use --debug-flag=SoloTrace
 //  then use traceproc.sh to compress tracefile
+
+// for garanteeing QoS, we assign tag 1 to core0 and tag2 to other cores
+//  then we adjust inc of tb2 according to info[1].slowdown
+
 
 // DRAM address mapping in "info.hh"
 

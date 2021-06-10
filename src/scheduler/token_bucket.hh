@@ -18,7 +18,7 @@ public:
     int tokens;
 
     /// used to store reqs not yet sent to mem_ctrl
-    std::queue<LabeledReq *> waiting_queue;
+    std::deque<LabeledReq *> waiting_queue;
 
     /// point to cpuinfos
     CpuInfo *cpus = NULL;
@@ -49,6 +49,8 @@ public:
     bool test_and_get();
 
     /// used to reorder reqs in waiting queue
+    // rule1: gather reqs for the same row(row buffer hit)
+    // rule2: arrange reqs in different banks (bank parallelism)
     void reorder_reqs();
 
     // 1 <= inc <= size

@@ -15,6 +15,11 @@ req_match(PacketPtr pkt1, PacketPtr pkt2)
 
 void
 Scheduler::print_si_accumulators(){
+    for(int i = 0; i <= num_cpus; i++){
+        uint64_t cpui_total = info[i].acc[ACC_SI_READ_T] + info[i].acc[ACC_SI_WRITE_T];
+        total_mem_si += cpui_total;
+        total_mem_ui += cpui_total;
+    }
 #ifdef PRINT_ACCUMULATORS
     std::cout << "curTick" << curTick() << std::endl;
     for (int i = 0; i <= num_cpus; i++) {
@@ -26,6 +31,7 @@ Scheduler::print_si_accumulators(){
             std::cout << info[i].acc[j] << ((j == num_acc - 1)? "\n" : " ");
         }
     }
+    std::cout << "si_acc_total " << total_mem_si << std::endl;
 #else
 #endif
 }
@@ -42,6 +48,7 @@ Scheduler::print_ui_accumulators(){
             std::cout << info[i].acc[j] << ((j == num_acc - 1)? "\n" : " ");
         }
     }
+    std::cout << "ui_acc_total " << total_mem_ui << std::endl;
 #else
 #endif
 }
@@ -54,6 +61,7 @@ Scheduler::reset_si_accumulators(){
             info[i].acc[j] = 0;
         }
     }
+    total_mem_si = 0;
 }
 
 void
@@ -63,6 +71,8 @@ Scheduler::reset_ui_accumulators(){
             info[i].acc[j] = 0;
         }
     }
+    prev_total_mem_ui = total_mem_ui;
+    total_mem_ui = 0;
 }
 
 void
@@ -224,6 +234,9 @@ Scheduler::operate_slowdown_pred(){
 
         //[Ivy TODO] we use actual slowdown instead of predicted slowdown
         info[i].slowdown_vec.push_back(act_sd);
+#ifdef PRINT_SLOWDOWN
+        std::cout << "cpu " << i << " sd: " << act_sd << std::endl;
+#endif
     }
 #else
     for(int i=1; i<=num_cpus; i++){
@@ -233,13 +246,36 @@ Scheduler::operate_slowdown_pred(){
 
 }
 
-/// update token bucket params every updating interval
+
+void 
+Scheduler::cluster(){
+    
+    for(int i=1; i<num_cpus; i++){
+        if(info[i].tag == 1){
+            // critical process, do not change tag
+            return;
+        }
+        uint64_t cpui_total = info[i].acc[ACC_SI_READ_T] + info[i].acc[ACC_SI_WRITE_T];
+        uint64_t prev_bandwidth = prev_total_mem_ui / NUM_UI_SI;
+        uint64_t percore_bw = prev_bandwidth / num_cpus;
+
+        if(cpui_total < percore_bw/2){
+            // latency-sensitve
+            info[i].tag = 2;
+        }else{
+            //bandwidth sensitive
+            info[i].tag = 3;
+        }
+    }
+}
+
 void
 Scheduler::update_token_bucket(){
+
     // calculate average slowdown in the ui
     std::vector<double> avg_sd;
-    avg_sd.push_back(0.0);
-    for(int i=1; i <=num_cpus; i++){
+    avg_sd.push_back(0.0);//info[0]
+    for(int i=1; i<=num_cpus; i++){
         assert(info[i].slowdown_vec.size()>2);
         double max_sd = *(std::max_element(info[i].slowdown_vec.begin(),info[i].slowdown_vec.end()));
         double min_sd = *(std::min_element(info[i].slowdown_vec.begin(),info[i].slowdown_vec.end()));
@@ -247,25 +283,47 @@ Scheduler::update_token_bucket(){
         double avg = (double)(sum_sd - max_sd - min_sd) / (info[i].slowdown_vec.size() - 2);
 
 #ifdef PRINT_SLOWDOWN
-        std::cout << "cpu " << i << " sd: " << avg << std::endl;
+        std::cout << "cpu " << i << " avgsd: " << avg << std::endl;
 #endif
         avg_sd.push_back(avg);
         info[i].slowdown_vec.clear();
     }
 
+    // do not change tb when a single core runs
+    if(num_cpus==1) return;
+
     if(policy == Policy::CORE0_T){
+// #define OLD_IMPL
+#ifndef OLD_IMPL 
+        double crt_sd = avg_sd[1];
+        uint64_t bandwidth = total_mem_ui * buckets[2]->freq / UPDATING_INTERVAL;
+        if(crt_sd > 0.3 && prev_slowdown > 0.3){
+            buckets[2]->set_inc(10);
 
+        }else if(crt_sd > 0.3){
+            buckets[2]->set_inc(buckets[2]->inc/2);
+
+        }else if(crt_sd > 0.1){
+            int tokens_dec =  ((crt_sd - 0.1)  + 1) * (num_cpus - 1);
+            buckets[2]->set_inc(buckets[2]->inc - tokens_dec);
+
+        }else if(crt_sd <= 0.08){
+            int token_inc = bandwidth * (0.1 - crt_sd);
+            buckets[2]->set_inc(buckets[2]->inc + token_inc);
+        }
+        prev_slowdown = avg_sd[1];
+#else
+        // old implementation with stream benchmark
         //[Ivy TODO]
-
         int tokens_inc = 0;
         if(avg_sd[1] > 0.3)
         {
             //[Ivy TODO]
-            uint64_t bandwidth = info[1].acc[ACC_UI_READ_T] + info[1].acc[ACC_UI_WRITE_T];
-            int tmp_inc_diff = (num_cpus - 1) * (avg_sd[1] - 0.1) * bandwidth * buckets[1]->freq / UPDATING_INTERVAL;
-            tmp_inc_diff = std::min(buckets[0]->inc - 1, tmp_inc_diff);
-            tokens_inc -= std::max(buckets[0]->inc / 2, tmp_inc_diff);
-            std::cout << "tmp_inc " << tmp_inc_diff << " " << buckets[0]->inc << std::endl;
+            uint64_t bandwidth = total_mem_ui * buckets[2]->freq / UPDATING_INTERVAL;
+            int tmp_inc_diff = (num_cpus - 1) * (avg_sd[1] - 0.1) * bandwidth;
+            tmp_inc_diff = std::min(buckets[2]->inc - 1, tmp_inc_diff);
+            tokens_inc -= std::max(buckets[2]->inc / 2, tmp_inc_diff);
+            std::cout << "tmp_inc " << tmp_inc_diff << " " << buckets[2]->inc << std::endl;
         }
         else if(avg_sd[1] > 0.1)
         {
@@ -273,32 +331,37 @@ Scheduler::update_token_bucket(){
         }
         else if(avg_sd[1] <= 0.08)
         {
-            tokens_inc = num_cpus - 1;
+            tokens_inc = (num_cpus - 1)*10;
         }
-        buckets[0]->set_inc(buckets[0]->inc + tokens_inc);
-    
-
-
-
-
-
-
-
-
-
-
-
+        buckets[2]->set_inc(buckets[2]->inc + tokens_inc);
+#endif   
 
     }
-    else if(policy == Policy::ALL){
-        return;
+    else if(policy == Policy::FAIR){
+        // adjust tb2 inc
+        double prev_sd = avg_sd[prev_slowest];
+        // total bandwidth of previous ui
+        uint64_t bandwidth = total_mem_ui * buckets[2]->freq / UPDATING_INTERVAL;
+        if(prev_sd > 0.8){
+            buckets[2]->set_inc(buckets[2]->inc/2);
+        }
+        else if(prev_sd > 0.6){
+            int token_dec = (prev_sd - 0.6) * (num_cpus - 1);
+            buckets[2]->set_inc(buckets[2]->inc - token_dec);
+        }
+        else if(prev_sd < 0.4){
+            int token_inc = bandwidth * (0.4 - prev_sd);
+            buckets[2]->set_inc(buckets[2]->inc + token_inc);
+        }
+
+        // choose new slowest, assign tag 1
+        int slowest = std::max_element(avg_sd.begin(),avg_sd.end()) - avg_sd.begin();
+        prev_slowest = slowest;
+        for(int i=1; i<=num_cpus; i++) info[i].tag=2;
+        info[slowest].tag = 1;
+        
     }
 }
-
-
-
-
-
 
 
 /// get a waiting req from token buckets for memobj to send
