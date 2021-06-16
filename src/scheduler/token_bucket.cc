@@ -1,11 +1,78 @@
 #include "token_bucket.hh"
 
+#ifdef DRAMSIM
+bool bank_conflict(LabeledReq *a, LabeledReq* b){
+    return  (a->addr.bank_group == b->addr.bank_group) && \
+            (a->addr.bank       == b->addr.bank      ) && \
+            (a->addr.row        != b->addr.row);
+}
+
+bool row_buffer_hit(LabeledReq *a, LabeledReq* b){
+    return  (a->addr.bank_group == b->addr.bank_group) && \
+            (a->addr.bank       == b->addr.bank      ) && \
+            (a->addr.row        == b->addr.row);
+}
+#else
+bool bank_conflict(LabeledReq *a, LabeledReq* b){
+    return  (a->addr.bank       == b->addr.bank      ) && \
+            (a->addr.row        != b->addr.row);
+}
+
+bool row_buffer_hit(LabeledReq *a, LabeledReq* b){
+    return  (a->addr.bank       == b->addr.bank      ) && \
+            (a->addr.row        == b->addr.row);
+}
+#endif
+
 void TokenBucket::add_request(LabeledReq *request, bool head=false) {
+#ifdef TB_REORDER
+    int len = waiting_queue.size();
+    int B[len-1], C[len-1];
+    if(len==0){
+        waiting_queue.push_back(request);
+        return;
+    }
+
+    for(int i=0; i<len-1; i++){
+        LabeledReq *nreq = waiting_queue[i];
+        if(row_buffer_hit(nreq, request)){
+            waiting_queue.insert(waiting_queue.begin()+i, request);
+            return;
+        }
+        B[i]=0;C[i]=0;
+        LabeledReq *nnreq = waiting_queue[i+1];
+        if(!bank_conflict(nreq, request) && !bank_conflict(nnreq, request)){
+            B[i]=1;
+        }
+        if(bank_conflict(nreq, nnreq)){
+            C[i]=1;
+        }
+    }
+
+    for(int i=0; i<len-1; i++){
+        if(B[i] && C[i]){
+            waiting_queue.insert(waiting_queue.begin()+i, request);
+            return;
+        }
+    }
+
+    for(int i=0; i<len-1; i++){
+        if(B[i]){
+            waiting_queue.insert(waiting_queue.begin()+i, request);
+            return;
+        }
+    }
+
+    waiting_queue.push_back(request);
+    return;
+                
+#else
     if(head){
         waiting_queue.push_front(request);
     }else{
         waiting_queue.push_back(request);
     }
+#endif
 }
 
 LabeledReq* TokenBucket::get_request() {
@@ -35,28 +102,8 @@ bool TokenBucket::test_and_get(){
     return false;
 }
 
-// bool bank_conflict(LabeledReq *a, LabeledReq* b){
-//     return  (a->addr.bank_group == b->addr.bank_group) && \
-//             (a->addr.bank       == b->addr.bank      ) && \
-//             (a->addr.row        != b->addr.row);
-// }
 
-// bool row_buffer_hit(LabeledReq *a, LabeledReq* b){
-//     return  (a->addr.bank_group == b->addr.bank_group) && \
-//             (a->addr.bank       == b->addr.bank      ) && \
-//             (a->addr.row        == b->addr.row);
-// }
-
-bool bank_conflict(LabeledReq *a, LabeledReq* b){
-    return  (a->addr.bank       == b->addr.bank      ) && \
-            (a->addr.row        != b->addr.row);
-}
-
-bool row_buffer_hit(LabeledReq *a, LabeledReq* b){
-    return  (a->addr.bank       == b->addr.bank      ) && \
-            (a->addr.row        == b->addr.row);
-}
-
+/*
 void TokenBucket::reorder_reqs(){
     for(int i=0; i<waiting_queue.size(); i++){
         LabeledReq *nreq = waiting_queue[i];
@@ -79,8 +126,6 @@ void TokenBucket::reorder_reqs(){
         }
     }
 }
-
-/*
 void TokenBucket::reorder_reqs(){
     std::vector<int> conflict_dist;
     conflict_dist.push_back(10000000);//INT_MAX
@@ -127,14 +172,8 @@ void TokenBucket::reorder_reqs(){
         int minposition = minconflict - conflict_dist.begin();
         
         // calculate new conflict dist
-
-
         }
-  
-
-
     }
-
     waiting_queue.swap(ordered_queue);
 
 }

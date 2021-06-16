@@ -222,11 +222,16 @@ SimpleMemobj::processEvent_si()
 
     // print accumulators
     scheduler->print_si_accumulators();
+    scheduler->print_tb_parameters();
 #ifdef CLUSTERING
-    scheduler->cluster();
+    if(times_si == UPDATING_INTERVAL / SAMPLING_INTERVAL - 1){
+        scheduler->cluster();   
+    }    
+    for(int i=0; i<=scheduler->num_tags; i++){
+        scheduler->buckets[i]->bypass = (i<=1);
+    }
 #endif
     scheduler->reset_si_accumulators();
-    scheduler->print_tb_parameters();
 
     // UPDATING INTERVAL, we adjust token buckets
     if(times_si <= 1){
@@ -235,6 +240,11 @@ SimpleMemobj::processEvent_si()
         scheduler->update_token_bucket();
         scheduler->reset_ui_accumulators();
         times_si = UPDATING_INTERVAL / SAMPLING_INTERVAL;
+#ifdef CLUSTERING
+    for(int i=0; i<=scheduler->num_tags; i++){
+        scheduler->buckets[i]->bypass = true;
+    }
+#endif
     }
     else{
         DPRINTF(SimpleMemobj, "test: Sampling!\n");
@@ -247,13 +257,8 @@ void
 SimpleMemobj::processEvent_tb()
 {
     DPRINTF(SimpleMemobj, "Adding tokens\n");
-    for(int i=0; i<=num_tags; i++){
+    for(int i=0; i<=scheduler->num_tags; i++){
         scheduler->bucket(i)->add_tokens();
-        ////
-        std::cout << "tbw: " << scheduler->bucket(i)->waiting_num() << std::endl;
-#ifdef TB_REORDER
-        scheduler->bucket(i)->reorder_reqs();
-#endif
     }
     PacketPtr pkt = NULL;
 

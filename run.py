@@ -6,6 +6,10 @@ import faulthandler;faulthandler.enable()
 gem5 = 'build/RISCV/gem5.opt'
 config = 'configs/example/se.py'
 
+all_works = {"hello", "stream", 
+    "perlbench", "bzip2", "gcc", "lbm",
+    "sjeng", "namd", "cactusADM"}
+
 wkld_set = {
     "hello":"tests/test-progs/hello/bin/riscv/linux/hello",
     "insttest":"tests/test-progs/insttest/bin/riscv/linux-rv64i/insttest",
@@ -31,8 +35,6 @@ spec06_id = {
     "bzip2":"401",
     "gcc":"403",
     "lbm":"470",
-    # "bwaves":"410",
-    # "sphinx3":"482",
     "sjeng":"458",
     "namd":"444",
     "cactusADM":"436"
@@ -43,10 +45,6 @@ spec06_option = {
     "bzip2":    spec06path+"401.bzip2/"     +inputdir+"control",
     "gcc":      spec06path+"403.gcc/"       +inputdir+"cccp.i",
     "lbm":      "20 reference.dat 0 1 "+spec06path+"470.lbm/"+inputdir+"100_100_130_cf_a.of" ,
-    # "bwaves":   "",
-    # "sphinx3":  spec06path+"482.sphinx3/"+inputdir+"ctlfile "+\
-    #     spec06path+"482.sphinx3/"+inputdir+" "+\
-    #     spec06path+"482.sphinx3/"+inputdir+"args.an4",
     "sjeng":    spec06path+"458.sjeng/"     +inputdir+"test.txt",
     "namd":     " --input "            +spec06path+"444.namd/data/all/input/namd.input"+" --iterations 1 ",
     "cactusADM":spec06path+"436.cactusADM/" +inputdir+"benchADM.par"

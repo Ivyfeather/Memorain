@@ -10,7 +10,7 @@
 
 
 class Scheduler{
-private:
+public:
     //// a token bucket for each tag
     int num_tags = 2;
     TokenBucket **buckets;
@@ -23,7 +23,7 @@ private:
     /* Beaware: 
         info[0] is for func
         cpu_i is at CpuInfo[i+1]
-        when enumerating, use "for(int i=0; i<=num_cpus; i++)"
+        when enumerating CpuInfo, use "for(int i=1; i<=num_cpus; i++)"
     */
     CpuInfo *info;
 
@@ -85,11 +85,11 @@ public:
         }
 
         // ----- init token buckets -----
-        buckets = new TokenBucket *[num_tags+1]; // 0 for func
-        int init_size = 400, init_freq = 10000000, init_inc = 50;
+        buckets = new TokenBucket *[num_tags+2]; // 0 for func
+        int init_size = 400, init_freq = 10000000, init_inc = 100;
         for(int i=0; i<=num_tags; i++){
             int cnt_tagi = 0;
-            for(int j=0; j<=num_cpus; j++){
+            for(int j=1; j<=num_cpus; j++){
                 if(info[j].tag == i) cnt_tagi++;
             }
 #ifdef CONTROLL_ENABLE
@@ -99,7 +99,10 @@ public:
             buckets[i] = new TokenBucket(cnt_tagi*init_size, init_freq, cnt_tagi*init_inc, true);    
 #endif
         }
-
+#ifdef CLUSTERING
+        num_tags ++;
+        buckets[3] = new TokenBucket(buckets[2]->size, buckets[2]->freq, buckets[2]->inc, false);
+#endif
     }
 
     ~Scheduler()

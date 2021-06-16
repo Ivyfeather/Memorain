@@ -3,7 +3,6 @@
 
 #include "common.h"
 #include "info.hh"
-#include "info.hh"
 #include "mem/packet.hh"
 #include "mem/request.hh"
 
@@ -48,10 +47,10 @@ public:
     /// used when a req arrives memobj
     bool test_and_get();
 
-    /// used to reorder reqs in waiting queue
+    /// used to reorder reqs in waiting queue(now do this in add_request)
     // rule1: gather reqs for the same row(row buffer hit)
     // rule2: arrange reqs in different banks (bank parallelism)
-    void reorder_reqs();
+    // void reorder_reqs();
 
     // 1 <= inc <= size
     inline void set_inc(int i) { inc = std::min(std::max(1, i), size); }

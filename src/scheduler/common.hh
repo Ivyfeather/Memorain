@@ -26,11 +26,10 @@
 #define PRINT_ACCUMULATORS
 #define PRINT_TB_PARAMETERS
 #define SLOWDOWN_PRED
-#define PRINT_SLOWDOWN
 
 #define CONTROLL_ENABLE
-#define TB_REORDER
-// #define CLUSTERING
+// #define TB_REORDER
+// #define CLUSTERING //can only use tag 1,2
 
 #define SAMPLING_INTERVAL 50000000 
 #define UPDATING_INTERVAL 500000000
@@ -45,16 +44,13 @@
 
 // To print memory access log, use --debug-flag=MemLog 
 
-// To record solo trace, use --debug-flag=SoloTrace
-//  then use traceproc.sh to compress tracefile
+// To record solo 'instcount-ticks' trace, use --debug-flag=SoloTrace
+//  then use 'result/trace/traceproc.sh' to compress tracefile
 
-// for garanteeing QoS, we assign tag 1 to core0 and tag2 to other cores
+// for QoS, we assign tag 1 to core0 and tag2 to other cores
 //  then we adjust inc of tb2 according to info[1].slowdown
-
 
 // DRAM address mapping in "info.hh"
 
 #endif
-// 1cycle~500Tick
-// 10w~5000w
-// 300~15w
+// 1cycle in AutoMBA~500Tick

@@ -35,3 +35,6 @@ configs/example/memcheck.cfg
 configs/dram/lowp_sweep.cfg
 util/run_sh_scripts/ts-ideal_trad_4w_lbuf_o
 result
+result2
+benchADM.par
+qos.bundle

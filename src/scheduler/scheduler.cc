@@ -25,7 +25,7 @@ Scheduler::print_si_accumulators(){
     for (int i = 0; i <= num_cpus; i++) {
         // i=cpu_id + 1 (i=0 is func)
         // print sampling interval accumulators
-        std::cout << "si_accumulators[" << i << "]: ";
+        std::cout << "si_accumulators[" << i << "] tag " << info[i].tag << ":";
         int num_acc = (int)ACC_SI_MAX;
         for (int j = 0; j < num_acc; j++) {
             std::cout << info[i].acc[j] << ((j == num_acc - 1)? "\n" : " ");
@@ -234,9 +234,7 @@ Scheduler::operate_slowdown_pred(){
 
         //[Ivy TODO] we use actual slowdown instead of predicted slowdown
         info[i].slowdown_vec.push_back(act_sd);
-#ifdef PRINT_SLOWDOWN
         std::cout << "cpu " << i << " sd: " << act_sd << std::endl;
-#endif
     }
 #else
     for(int i=1; i<=num_cpus; i++){
@@ -249,17 +247,16 @@ Scheduler::operate_slowdown_pred(){
 
 void 
 Scheduler::cluster(){
-    
-    for(int i=1; i<num_cpus; i++){
+    for(int i=1; i<=num_cpus; i++){
         if(info[i].tag == 1){
             // critical process, do not change tag
-            return;
+            continue;
         }
         uint64_t cpui_total = info[i].acc[ACC_SI_READ_T] + info[i].acc[ACC_SI_WRITE_T];
         uint64_t prev_bandwidth = prev_total_mem_ui / NUM_UI_SI;
         uint64_t percore_bw = prev_bandwidth / num_cpus;
 
-        if(cpui_total < percore_bw/2){
+        if(cpui_total < percore_bw/4){
             // latency-sensitve
             info[i].tag = 2;
         }else{
@@ -271,9 +268,8 @@ Scheduler::cluster(){
 
 void
 Scheduler::update_token_bucket(){
-
     // calculate average slowdown in the ui
-    std::vector<double> avg_sd;
+    std::vector<double> avg_sd;//sd[i] for CpuInfo[i]
     avg_sd.push_back(0.0);//info[0]
     for(int i=1; i<=num_cpus; i++){
         assert(info[i].slowdown_vec.size()>2);
@@ -293,8 +289,8 @@ Scheduler::update_token_bucket(){
     if(num_cpus==1) return;
 
     if(policy == Policy::CORE0_T){
-// #define OLD_IMPL
-#ifndef OLD_IMPL 
+// #define SEMAL_QOS
+#ifndef SEMAL_QOS
         double crt_sd = avg_sd[1];
         uint64_t bandwidth = total_mem_ui * buckets[2]->freq / UPDATING_INTERVAL;
         if(crt_sd > 0.3 && prev_slowdown > 0.3){
@@ -312,8 +308,12 @@ Scheduler::update_token_bucket(){
             buckets[2]->set_inc(buckets[2]->inc + token_inc);
         }
         prev_slowdown = avg_sd[1];
+#ifdef CLUSTERING
+        buckets[3]->set_inc(buckets[2]->inc);
+        buckets[2]->set_inc(buckets[2]->inc * 2);
+#endif
+
 #else
-        // old implementation with stream benchmark
         //[Ivy TODO]
         int tokens_inc = 0;
         if(avg_sd[1] > 0.3)
